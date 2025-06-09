@@ -514,7 +514,7 @@
             <h1>🎯 밈주머니 빙고 게임!</h1>
             <p>밈주머니와 함께 즐기는 쐐기 빙고!</p>
             <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
-                v3.8 - 3x3 고정, 초대링크 자동입력 개선, 호스트 비밀번호 별표 처리
+                v3.9 - 초대 링크 자동 입력/입장 완벽 개선, 호스트 비밀번호 별표 처리
             </div>
         </div>
 
@@ -527,8 +527,8 @@
                 </div>
                 
                 <div class="button-group">
-                    <button class="btn btn-primary" onclick="createRoom()">새 방 만들기</button>
-                    <button class="btn btn-secondary" onclick="showJoinRoom()">방 입장하기</button>
+                    <button class="btn btn-primary" id="create-room-btn" onclick="createRoom()">새 방 만들기</button>
+                    <button class="btn btn-secondary" id="show-join-room-btn" onclick="showJoinRoom()">방 입장하기</button>
                 </div>
 
                 <div id="join-room-section" class="hidden" style="margin-top: 15px;">
@@ -588,7 +588,7 @@
                         <div class="radio-item">
                             <input type="radio" name="board-size" value="3" id="size-3" checked disabled> <label for="size-3">3x3</label>
                         </div>
-                        </div>
+                    </div>
                 </div>
                 <div>
                     <label><strong>승리 조건:</strong></label>
@@ -788,7 +788,6 @@
                 gameState.playerName = playerName;
                 gameState.roomCode = generateRoomCode();
                 // gameState.boardSize는 이제 3으로 고정됩니다.
-                // gameState.boardSize = parseInt(document.querySelector('input[name="board-size"]:checked').value); // 이 라인 삭제
                 gameState.maxPlayers = parseInt(document.getElementById('max-players').value);
                 
                 // Firebase에 방 생성
@@ -1055,8 +1054,7 @@
             
             try {
                 const winCondition = document.querySelector('input[name="win-condition"]:checked').value;
-                // boardSize는 이제 3으로 고정되므로, UI에서 가져오지 않음
-                const selectedBoardSize = 3; 
+                const selectedBoardSize = 3; // 3x3으로 고정
                 const selectedMaxPlayers = parseInt(document.getElementById('max-players').value);
 
                 await gameState.roomRef.update({
@@ -1466,6 +1464,10 @@
             document.getElementById('share-section').classList.add('hidden');
             document.getElementById('join-room-section').classList.add('hidden');
             document.getElementById('auto-join-hint').classList.add('hidden');
+            // '새 방 만들기'와 '방 입장하기' 버튼 그룹을 다시 보이게 함
+            document.getElementById('create-room-btn').style.display = 'inline-block';
+            document.getElementById('show-join-room-btn').style.display = 'inline-block';
+
             document.getElementById('first-player-section').classList.add('hidden');
             document.getElementById('player-name').value = '';
             document.getElementById('room-code').value = '';
@@ -1592,7 +1594,7 @@
                 return;
             }
 
-            // 턴과 관계없이 누구나 셀 상태를 변경할 수 있도록 턴 체크 로직을 제거했습니다.
+            // (이전 요청에 따라) 턴과 관계없이 누구나 셀 상태를 변경할 수 있도록 턴 체크 로직을 제거했습니다.
             // 턴은 "턴 종료" 버튼을 눌러야만 넘어갑니다.
             
             const selectedNumber = gameState.bingoBoard[index].number; // 현재 셀의 숫자
@@ -1690,7 +1692,7 @@
             }
         }
 
-        // 자동 입장 실행
+        // 자동 입장 실행 (초대 링크 전용 UX 개선)
         function performAutoJoin(roomCode) {
             console.log('🚀 자동 입장 프로세스 시작:', roomCode);
             
@@ -1698,9 +1700,11 @@
             const roomCodeInput = document.getElementById('room-code');
             const nameInput = document.getElementById('player-name');
             const hintElement = document.getElementById('auto-join-hint');
+            const createRoomBtn = document.getElementById('create-room-btn'); // 추가
+            const showJoinRoomBtn = document.getElementById('show-join-room-btn'); // 추가
             
             // DOM 요소가 아직 준비되지 않았다면 재시도 (재귀 호출)
-            if (!joinSection || !roomCodeInput || !nameInput || !hintElement) {
+            if (!joinSection || !roomCodeInput || !nameInput || !hintElement || !createRoomBtn || !showJoinRoomBtn) {
                 console.error('❌ 필요한 DOM 요소를 찾을 수 없음. 재시도합니다.');
                 setTimeout(() => performAutoJoin(roomCode), 100); 
                 return;
@@ -1708,15 +1712,21 @@
             
             console.log('✅ DOM 요소 모두 준비됨');
             
+            // "새 방 만들기"와 "방 입장하기" 버튼 숨기기
+            createRoomBtn.style.display = 'none';
+            showJoinRoomBtn.style.display = 'none';
+
+            // "방 입장" 섹션만 보이게 하기
             joinSection.classList.remove('hidden');
             roomCodeInput.value = roomCode; // 방 코드 자동 입력
-            nameInput.placeholder = '이름을 입력하고 입장하세요!'; 
+            roomCodeInput.readOnly = true; // 방 코드 수정 불가하도록 설정 (초대 링크 전용)
+            nameInput.placeholder = '닉네임을 입력하고 입장하세요!'; 
             
             hintElement.classList.remove('hidden'); // 힌트 표시
             
-            nameInput.focus(); // 이름 입력 필드에 포커스
+            nameInput.focus(); // 닉네임 입력 필드에 포커스
 
-            showMessage(`🎉 초대 링크로 접속했습니다! 방 코드: ${roomCode}\n이름을 입력하고 입장하세요!`, 'success');
+            showMessage(`🎉 초대 링크로 접속했습니다! 방 코드: ${roomCode}\n닉네임을 입력하고 입장하세요!`, 'success');
             
             // 기존 자동 입장 핸들러 제거 (중복 방지)
             const currentAutoJoinHandler = nameInput._autoJoinHandler;
@@ -1724,7 +1734,7 @@
                 nameInput.removeEventListener('keypress', currentAutoJoinHandler);
             }
             
-            // 새로운 자동 입장 핸들러 등록: 이름 입력 후 엔터 시 즉시 방 참여 시도
+            // 새로운 자동 입장 핸들러 등록: 닉네임 입력 후 엔터 시 즉시 방 참여 시도
             const newAutoJoinHandler = function(e) {
                 if (e.key === 'Enter' && e.target.value.trim()) {
                     console.log('⚡ Enter 키로 자동 입장 시도');
@@ -1755,12 +1765,11 @@
                 e.target.value = e.target.value.toUpperCase();
             });
 
-            // 빙고판 크기 선택 시 미션 최소 개수 힌트 업데이트
+            // 빙고판 크기 선택 시 미션 최소 개수 힌트 업데이트 (3x3 고정으로 UI상으로는 영향 없음)
             document.querySelectorAll('input[name="board-size"]').forEach(radio => {
                 radio.addEventListener('change', () => {
-                    // 3x3으로 고정되었으므로 이 부분은 이제 UI 업데이트에만 영향
                     const newSize = parseInt(radio.value); 
-                    gameState.boardSize = newSize; 
+                    gameState.boardSize = newSize; // 이 값은 계속 3이 될 것
                     updateMissionsDisplay(); 
                 });
             });
