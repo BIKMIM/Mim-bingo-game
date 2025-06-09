@@ -287,9 +287,9 @@
         }
 
         .winner-message {
-            background: linear-gradient(45deg, #f3ec78, #af4261);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            /* 이전에 background: linear-gradient와 text-fill-color가 있었던 자리 */
+            background-color: white; /* 팝업 배경색을 흰색으로 고정 */
+            color: #4a5568; /* 기본 텍스트 색상 */
             font-size: 3em;
             font-weight: bold;
             text-align: center;
@@ -305,17 +305,26 @@
             gap: 15px; /* 요소 간 간격 */
         }
 
+        /* 텍스트에만 그라데이션 적용을 위한 새로운 클래스 */
+        .gradient-text {
+            background: linear-gradient(45deg, #f3ec78, #af4261);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text; /* 표준 속성 */
+            color: transparent; /* Firefox 등에서 Fallback */
+        }
+
         .winner-message .emoji {
             font-size: 1.5em; /* 이모지 크기 */
-            -webkit-text-fill-color: initial; /* 이모지는 색상 유지 */
-            background: none; /* 이모지는 배경 클립 해제 */
+            /* 이모지는 그라데이션 적용하지 않으므로, 부모의 transparent 설정을 무시 */
+            -webkit-text-fill-color: initial; 
+            background: none; 
         }
 
         .winner-message .winner-text {
             font-size: 1em; /* 본문 텍스트 크기 */
             line-height: 1.3;
-            -webkit-text-fill-color: initial; /* 텍스트는 색상 유지 */
-            background: none;
+            /* winner-text에 직접 gradient-text 클래스를 적용할 것이므로 여기서는 투명 설정 제거 */
         }
 
         .winner-message .btn {
@@ -370,7 +379,7 @@
             <h1>🎯 밈주머니 빙고 게임!</h1>
             <p>밈주머니와 함께 즐기는 쐐기 빙고!</p>
             <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
-                v2.8 - 미션 할당 로직 완전 개선 & 화려한 승리 메시지, Gemini 버전
+                v2.9 - 승리 팝업 배경색 수정 및 안정성 개선
             </div>
         </div>
 
@@ -697,6 +706,10 @@
             gameState.roomRef.child('missionMap').on('value', (snapshot) => {
                 if (snapshot.exists()) {
                     gameState.missionMap = snapshot.val();
+                    // 미션 맵이 로드되었을 때 빙고판이 아직 생성되지 않았다면 생성 시도
+                    if (gameState.gameStarted && gameState.bingoBoard.length === 0) {
+                        generateBingoBoard();
+                    }
                 }
             });
 
@@ -809,7 +822,10 @@
                 if (roomData) {
                     gameState.winCondition = roomData.winCondition || 1;
                     gameState.missionMap = roomData.missionMap || {}; // 미션 맵 로드
-                    generateBingoBoard(); // 미션 맵을 기반으로 빙고판 생성
+                    // 빙고판 생성은 missionMap 리스너에서 처리
+                    if (Object.keys(gameState.missionMap).length > 0 && gameState.bingoBoard.length === 0) {
+                        generateBingoBoard();
+                    }
                 }
                 
             } catch (error) {
@@ -857,10 +873,16 @@
 
         // 빙고판 동기화
         function syncBingoBoard(boardData) {
+            // missionMap이 아직 로드되지 않았다면 동기화 스킵 (generateBingoBoard가 호출될 때까지 기다림)
+            if (Object.keys(gameState.missionMap).length === 0 && gameState.gameStarted) {
+                console.warn('syncBingoBoard: missionMap is not loaded yet. Skipping sync.');
+                return;
+            }
+
             if (!boardData || !gameState.bingoBoard || gameState.bingoBoard.length === 0) {
-                // 아직 빙고판이 생성되지 않았거나, 데이터가 없는 경우를 위한 방어 코드
+                // 게임이 시작되었고 missionMap이 로드되었지만 bingoBoard가 없는 경우 생성 시도
                 if (gameState.gameStarted && Object.keys(gameState.missionMap).length === 9 && gameState.bingoBoard.length === 0) {
-                    generateBingoBoard(); // 게임이 시작되고 미션 맵이 있다면 빙고판을 새로 생성
+                    generateBingoBoard(); 
                 }
                 return;
             }
@@ -869,7 +891,6 @@
             
             Object.keys(boardData).forEach(number => {
                 const cellData = boardData[number];
-                // 내 빙고판에서 해당 숫자를 가진 셀 찾기
                 const targetCellIndex = gameState.bingoBoard.findIndex(cell => cell.number == number);
 
                 if (targetCellIndex !== -1) {
@@ -877,7 +898,6 @@
                     if (!cellElement.classList.contains('flipped') && cellData.isFlipped) {
                         cellElement.classList.add('flipped');
                         cellElement.textContent = cellData.mission;
-                        // gameState.bingoBoard의 상태도 업데이트
                         gameState.bingoBoard[targetCellIndex].isFlipped = true;
                         gameState.bingoBoard[targetCellIndex].mission = cellData.mission;
                     }
@@ -945,9 +965,9 @@
             messageBox.classList.add('winner-message');
             messageBox.innerHTML = `
                 <p class="emoji">🎉🏆</p>
-                <p class="winner-text">${winnerName}님</p>
-                <p class="winner-text">${winCondition}줄 빙고로 승리했습니다!</p>
-                <button class="btn" onclick="closeWinnerMessage()">확인</button>
+                <p class="winner-text gradient-text">${winnerName}님</p>
+                <p class="winner-text gradient-text">${winCondition}줄 빙고로 승리했습니다!</p>
+                <button class="btn btn-primary" onclick="closeWinnerMessage()">확인</button>
             `;
             overlay.appendChild(messageBox);
             document.body.appendChild(overlay);
@@ -979,7 +999,7 @@
                 isHost: false,
                 roomCode: '',
                 playerName: '',
-                players: {}, // Corrected: players to players
+                players: {},
                 missions: [],
                 winCondition: 1,
                 gameStarted: false,
@@ -1067,11 +1087,10 @@
             const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             const shuffledNumbers = numbers.sort(() => Math.random() - 0.5);
             
-            // 섞인 숫자에 해당하는 미션을 missionMap에서 가져와서 로컬 빙고판 생성
-            // missionMap이 아직 로드되지 않은 경우를 대비한 방어 코드 추가
+            // missionMap이 아직 로드되지 않았다면 기다림
             if (Object.keys(gameState.missionMap).length === 0) {
-                console.warn('Mission map is not loaded yet. Retrying generateBingoBoard...');
-                setTimeout(generateBingoBoard, 500); // 맵 로드 대기 후 재시도
+                console.warn('generateBingoBoard: Mission map is not loaded yet. Retrying in 100ms...');
+                setTimeout(generateBingoBoard, 100); 
                 return;
             }
 
