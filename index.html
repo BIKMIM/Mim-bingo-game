@@ -5,17 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>밈주머니 빙고 게임</title>
     <style>
+        /* 기존 CSS는 생략 */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            // 빙고판 리스너 (실시간 동기화)
-            gameState.roomRef.child('gameBoard').on('value', (snapshot) => {
+            /* 빙고판 리스너 (실시간 동기화) 이 부분은 CSS 안에 잘못 들어가 있습니다. 아래 Script 섹션으로 이동해야 합니다. */
+            /* gameState.roomRef.child('gameBoard').on('value', (snapshot) => {
                 if (snapshot.exists()) {
                     const boardData = snapshot.val();
                     syncBingoBoard(boardData);
                 }
-            });
+            }); */
+        }
 
         body {
             font-family: Arial, sans-serif;
@@ -277,6 +279,65 @@
             margin: 10px 0;
         }
 
+        /* 승리 메시지 애니메이션 추가 */
+        .winner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .winner-message {
+            background: linear-gradient(45deg, #f3ec78, #af4261);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 3em;
+            font-weight: bold;
+            text-align: center;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            animation: zoomIn 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .winner-message::before {
+            content: '🎉';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 0.8em;
+            opacity: 0.7;
+        }
+
+        .winner-message::after {
+            content: '🏆';
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 0.8em;
+            opacity: 0.7;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes zoomIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -290,6 +351,11 @@
                 flex-direction: column;
                 align-items: flex-start;
             }
+
+            .winner-message {
+                font-size: 2em;
+                padding: 20px;
+            }
         }
     </style>
 </head>
@@ -299,13 +365,11 @@
             <h1>🎯 밈주머니 빙고 게임!</h1>
             <p>밈주머니와 함께 즐기는 쐐기 빙고!</p>
             <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
-                v2.7 - 초대링크 완전 자동입장 & 미션 할당 개선
+                v2.6 - 승리 메시지 및 초대링크 완전 수정
             </div>
         </div>
 
-        <!-- 게임 설정 화면 -->
         <div id="game-setup" class="game-setup">
-            <!-- 방 생성/입장 섹션 -->
             <div class="room-section">
                 <h2>🏠 방 설정</h2>
                 <div class="input-group">
@@ -331,7 +395,6 @@
 
                 <div id="status-message"></div>
                 
-                <!-- 공유 링크 섹션 -->
                 <div id="share-section" class="hidden" style="margin-top: 20px;">
                     <div style="background: #f7fafc; padding: 15px; border-radius: 8px; border: 2px solid #667eea;">
                         <h4 style="color: #4a5568; margin-bottom: 10px;">🔗 친구 초대 링크</h4>
@@ -346,7 +409,6 @@
                 </div>
             </div>
 
-            <!-- 플레이어 목록 -->
             <div class="players-section">
                 <h3>👥 참가자 목록</h3>
                 <div class="players-list" id="players-list">
@@ -354,7 +416,6 @@
                 </div>
             </div>
 
-            <!-- 미션 텍스트 입력 -->
             <div class="missions-section">
                 <h3>📝 미션 텍스트</h3>
                 <div class="mission-input-area">
@@ -368,7 +429,6 @@
                 </div>
             </div>
 
-            <!-- 게임 옵션 -->
             <div class="game-options">
                 <div>
                     <label><strong>승리 조건:</strong></label>
@@ -388,7 +448,6 @@
                     </div>
                 </div>
                 
-                <!-- 선공 선택 -->
                 <div id="first-player-section" class="hidden" style="margin-top: 20px;">
                     <label><strong>선공 플레이어:</strong></label>
                     <select id="first-player-select" style="margin-left: 10px; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0;">
@@ -397,7 +456,6 @@
                 </div>
             </div>
 
-            <!-- 게임 시작 버튼 -->
             <div style="text-align: center;">
                 <button class="btn btn-primary" id="start-game-btn" onclick="startGame()" style="font-size: 18px; padding: 15px 30px;">
                     🎮 게임 시작!
@@ -405,7 +463,6 @@
             </div>
         </div>
 
-        <!-- 게임 진행 화면 -->
         <div id="game-area" class="game-area">
             <div class="game-status">
                 <div class="status-text">방 코드: <span class="room-code-display" id="current-room-code">ABC123</span></div>
@@ -413,8 +470,7 @@
             </div>
 
             <div class="bingo-board" id="bingo-board">
-                <!-- 3x3 빙고판이 여기에 생성됩니다 -->
-            </div>
+                </div>
 
             <div style="text-align: center;">
                 <button class="btn btn-secondary" onclick="backToSetup()">게임 설정으로 돌아가기</button>
@@ -422,7 +478,6 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
@@ -494,7 +549,11 @@
                     missions: [],
                     gameStarted: false,
                     winCondition: 1,
-                    createdAt: Date.now()
+                    createdAt: Date.now(),
+                    // 방 생성 시 gameBoard, currentTurn, winner 필드도 초기화
+                    gameBoard: {}, 
+                    currentTurn: 0,
+                    winner: null
                 });
 
                 setupRoomListeners();
@@ -516,10 +575,11 @@
             document.getElementById('join-room-section').classList.remove('hidden');
         }
 
-        // 방 입장
-        async function joinRoom() {
+        // 방 입장 (초대 링크 자동 입장을 위해 roomCode 인자 추가)
+        async function joinRoom(prefilledRoomCode = null) {
             const playerName = document.getElementById('player-name').value.trim();
-            const roomCode = document.getElementById('room-code').value.trim().toUpperCase();
+            // prefilledRoomCode가 있으면 사용하고, 없으면 input 필드에서 가져옴
+            const roomCode = prefilledRoomCode || document.getElementById('room-code').value.trim().toUpperCase();
             
             if (!playerName) {
                 showMessage('플레이어 이름을 입력해주세요!', 'error');
@@ -606,9 +666,17 @@
 
             // 현재 턴 리스너
             gameState.roomRef.child('currentTurn').on('value', (snapshot) => {
-                const turnIndex = snapshot.val() || 0;
+                const turnIndex = snapshot.val() !== null ? snapshot.val() : 0; // null 체크 강화
                 gameState.currentTurn = turnIndex;
                 updateTurnDisplay();
+            });
+
+            // 빙고판 리스너 (CSS 파일에 잘못 들어가 있던 것을 여기로 이동)
+            gameState.roomRef.child('gameBoard').on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const boardData = snapshot.val();
+                    syncBingoBoard(boardData);
+                }
             });
 
             // 승자 발표 리스너 추가
@@ -616,14 +684,15 @@
                 if (snapshot.exists()) {
                     const winner = snapshot.val();
                     if (winner) {
-                        showMessage(`🎉🏆 게임 종료! ${winner}님이 ${gameState.winCondition}줄 빙고로 승리했습니다! 🏆🎉`, 'success');
+                        // 화려한 승리 메시지 오버레이 표시
+                        displayWinnerMessage(winner, gameState.winCondition);
                         
-                        // 모든 플레이어에게 승리 메시지 표시
-                        setTimeout(() => {
-                            if (confirm(`축하합니다! ${winner}님이 승리했습니다!\n\n설정 화면으로 돌아가시겠습니까?`)) {
-                                backToSetup();
-                            }
-                        }, 2000);
+                        // confirm 대신 오버레이 내부에 버튼 추가 (UX 개선)
+                        // setTimeout(() => {
+                        //     if (confirm(`축하합니다! ${winner}님이 승리했습니다!\n\n설정 화면으로 돌아가시겠습니까?`)) {
+                        //         backToSetup();
+                        //     }
+                        // }, 2000);
                     }
                 }
             });
@@ -631,6 +700,7 @@
 
         // 미션 추가
         async function addMission() {
+            // ... (기존 코드와 동일)
             const missionInput = document.getElementById('mission-input');
             const mission = missionInput.value.trim();
             
@@ -656,6 +726,7 @@
 
         // 미션 삭제
         async function deleteMission(index) {
+            // ... (기존 코드와 동일)
             try {
                 const newMissions = gameState.missions.filter((_, i) => i !== index);
                 await gameState.roomRef.child('missions').set(newMissions);
@@ -702,28 +773,14 @@
                     winCondition: parseInt(winCondition),
                     startedAt: Date.now(),
                     currentTurn: firstPlayerIndex,
-                    gameBoard: {} // 숫자별 상태를 저장할 객체
+                    gameBoard: {}, // 숫자별 상태를 저장할 객체
+                    winner: null, // 새로운 게임 시작 시 winner 초기화
+                    gameEnded: false // 새로운 게임 시작 시 gameEnded 초기화
                 });
                 
             } catch (error) {
                 showMessage('게임 시작에 실패했습니다: ' + error.message, 'error');
             }
-        }
-
-        // 공유 미션 배열 생성 (모든 플레이어가 동일한 미션 순서를 사용)
-        function generateSharedMissions(missions) {
-            if (missions.length < 9) return [];
-            
-            // 미션 배열을 복사하여 섞기
-            const shuffledMissions = [...missions].sort(() => Math.random() - 0.5);
-            
-            // 1번부터 9번까지 숫자에 미션 할당
-            const missionMapping = {};
-            for (let i = 1; i <= 9; i++) {
-                missionMapping[i] = shuffledMissions[i - 1] || `미션 ${i}`;
-            }
-            
-            return missionMapping;
         }
 
         // 게임 데이터 로드
@@ -734,7 +791,9 @@
                 
                 if (roomData) {
                     gameState.winCondition = roomData.winCondition || 1;
-                    generateBingoBoard();
+                    // 모든 플레이어가 동일한 미션 배열을 가지고 빙고판을 생성하도록 변경
+                    // 미션 순서는 Firebase에서 가져온 missions 배열을 섞어서 사용
+                    generateBingoBoard(roomData.missions || []); 
                 }
                 
             } catch (error) {
@@ -744,6 +803,7 @@
 
         // 선공 플레이어 옵션 업데이트
         function updateFirstPlayerOptions() {
+            // ... (기존 코드와 동일)
             const firstPlayerSection = document.getElementById('first-player-section');
             const firstPlayerSelect = document.getElementById('first-player-select');
             
@@ -767,6 +827,7 @@
 
         // 턴 표시 업데이트
         function updateTurnDisplay() {
+            // ... (기존 코드와 동일)
             const turnElement = document.getElementById('current-turn');
             if (turnElement && gameState.playerList.length > 0) {
                 const currentPlayerName = gameState.playerList[gameState.currentTurn];
@@ -782,7 +843,7 @@
 
         // 빙고판 동기화 (숫자 기반으로 수정)
         function syncBingoBoard(boardData) {
-            if (!boardData) return;
+            if (!boardData || !gameState.bingoBoard || gameState.bingoBoard.length === 0) return;
             
             const cells = document.querySelectorAll('.bingo-cell');
             
@@ -791,18 +852,19 @@
                 const cellData = boardData[number];
                 
                 // 내 빙고판에서 해당 숫자를 가진 셀 찾기
-                cells.forEach((cellElement, index) => {
-                    const cellNumber = gameState.bingoBoard[index].number;
-                    
-                    if (cellNumber == number && cellData.isFlipped) {
-                        if (!cellElement.classList.contains('flipped')) {
-                            cellElement.classList.add('flipped');
-                            cellElement.textContent = cellData.mission;
-                            gameState.bingoBoard[index].isFlipped = true;
-                            gameState.bingoBoard[index].mission = cellData.mission;
-                        }
+                const targetCellIndex = gameState.bingoBoard.findIndex(cell => cell.number == number);
+
+                if (targetCellIndex !== -1) {
+                    const cellElement = cells[targetCellIndex];
+                    // 이미 뒤집힌 상태가 아니라면 업데이트
+                    if (!cellElement.classList.contains('flipped') && cellData.isFlipped) {
+                        cellElement.classList.add('flipped');
+                        cellElement.textContent = cellData.mission;
+                        // gameState.bingoBoard의 상태도 업데이트
+                        gameState.bingoBoard[targetCellIndex].isFlipped = true;
+                        gameState.bingoBoard[targetCellIndex].mission = cellData.mission;
                     }
-                });
+                }
             });
             
             // 빙고 상태 체크 (즉시 실행)
@@ -856,11 +918,42 @@
                             
                             console.log(`🏆 승리! ${gameState.playerName}님이 ${gameState.winCondition}줄 빙고 달성!`);
                         }
-                        }
                     });
                 }
             });
         }
+
+        // 승리 메시지 표시 함수
+        function displayWinnerMessage(winnerName, winCondition) {
+            const overlay = document.createElement('div');
+            overlay.classList.add('winner-overlay');
+            overlay.id = 'winner-overlay';
+
+            const messageBox = document.createElement('div');
+            messageBox.classList.add('winner-message');
+            messageBox.innerHTML = `
+                <p>🎉🏆</p>
+                <p>${winnerName}님</p>
+                <p>${winCondition}줄 빙고로 승리했습니다!</p>
+                <button class="btn btn-primary" style="margin-top: 20px;" onclick="closeWinnerMessage()">확인</button>
+            `;
+            overlay.appendChild(messageBox);
+            document.body.appendChild(overlay);
+        }
+
+        // 승리 메시지 닫기
+        function closeWinnerMessage() {
+            const overlay = document.getElementById('winner-overlay');
+            if (overlay) {
+                overlay.remove();
+                // 메시지 닫고 설정 화면으로 돌아갈지 사용자에게 물어보기
+                if (confirm('설정 화면으로 돌아가시겠습니까?')) {
+                    backToSetup();
+                }
+            }
+        }
+
+
         function backToSetup() {
             document.getElementById('game-setup').style.display = 'block';
             document.getElementById('game-area').style.display = 'none';
@@ -888,6 +981,11 @@
             // UI 초기화
             document.getElementById('players-list').innerHTML = '<div class="loading">방에 입장하면 참가자가 표시됩니다</div>';
             document.getElementById('missions-list').innerHTML = '<div style="text-align: center; color: #a0aec0; padding: 20px;">미션을 추가해주세요 (최소 9개 필요)</div>';
+            document.getElementById('share-section').classList.add('hidden'); // 공유 링크 섹션 숨기기
+            document.getElementById('join-room-section').classList.add('hidden'); // 방 입장 섹션 숨기기
+            document.getElementById('auto-join-hint').classList.add('hidden'); // 자동 입장 힌트 숨기기
+            document.getElementById('player-name').value = ''; // 플레이어 이름 초기화
+            document.getElementById('room-code').value = ''; // 방 코드 초기화
         }
 
         // 방 코드 생성
@@ -902,6 +1000,7 @@
 
         // 플레이어 목록 업데이트
         function updatePlayersDisplay() {
+            // ... (기존 코드와 동일)
             const playersList = document.getElementById('players-list');
             const playersArray = Object.values(gameState.players);
             
@@ -931,6 +1030,7 @@
 
         // 미션 목록 업데이트
         function updateMissionsDisplay() {
+            // ... (기존 코드와 동일)
             const missionsList = document.getElementById('missions-list');
             if (gameState.missions.length === 0) {
                 missionsList.innerHTML = '<div style="text-align: center; color: #a0aec0; padding: 20px;">미션을 추가해주세요 (최소 9개 필요)</div>';
@@ -945,15 +1045,21 @@
             ).join('');
         }
 
-        // 빙고판 생성
-        function generateBingoBoard() {
-            const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-            const shuffledNumbers = numbers.sort(() => Math.random() - 0.5);
+        // 빙고판 생성 (모든 플레이어가 동일한 미션 순서로 빙고판을 생성하도록 수정)
+        function generateBingoBoard(availableMissions) {
+            if (availableMissions.length < 9) {
+                showMessage('게임 시작에 필요한 미션이 부족합니다!', 'error');
+                return;
+            }
             
-            gameState.bingoBoard = shuffledNumbers.map((num, index) => ({
-                number: num,
+            // 미션 배열을 섞어서 각 플레이어의 빙고판을 고유하게 만듬
+            // 단, 모든 플레이어는 같은 원본 미션 목록을 가지고 있어야 함
+            const shuffledMissions = availableMissions.sort(() => Math.random() - 0.5);
+            
+            gameState.bingoBoard = shuffledMissions.slice(0, 9).map((mission, index) => ({
+                number: index + 1, // 1부터 9까지의 숫자를 부여
                 isFlipped: false,
-                mission: ''
+                mission: mission // 미션 텍스트를 바로 할당
             }));
             
             const bingoBoard = document.getElementById('bingo-board');
@@ -979,8 +1085,9 @@
             
             // 선택한 숫자
             const selectedNumber = gameState.bingoBoard[index].number;
+            const missionToAssign = gameState.bingoBoard[index].mission; // 이 셀에 할당된 미션 사용
             
-            // 이미 사용된 숫자인지 Firebase에서 확인
+            // 이미 사용된 숫자인지 Firebase에서 확인 (race condition 방지)
             try {
                 const snapshot = await gameState.roomRef.child('gameBoard').child(selectedNumber).once('value');
                 if (snapshot.exists()) {
@@ -988,30 +1095,10 @@
                     return;
                 }
                 
-                // 사용 가능한 미션 찾기
-                const usedMissionsSnapshot = await gameState.roomRef.child('gameBoard').once('value');
-                const usedMissions = [];
-                if (usedMissionsSnapshot.exists()) {
-                    Object.values(usedMissionsSnapshot.val()).forEach(cellData => {
-                        if (cellData.mission) {
-                            usedMissions.push(cellData.mission);
-                        }
-                    });
-                }
-                
-                const availableMissions = gameState.missions.filter(mission => !usedMissions.includes(mission));
-                
-                if (availableMissions.length === 0) {
-                    showMessage('사용할 수 있는 미션이 없습니다!', 'error');
-                    return;
-                }
-                
-                const randomMission = availableMissions[Math.floor(Math.random() * availableMissions.length)];
-                
                 // Firebase에 숫자별 상태 업데이트
                 await gameState.roomRef.child('gameBoard').child(selectedNumber).set({
                     isFlipped: true,
-                    mission: randomMission,
+                    mission: missionToAssign, // 미리 할당된 미션을 사용
                     flippedBy: gameState.playerName,
                     flippedAt: Date.now()
                 });
@@ -1026,28 +1113,7 @@
                 showMessage('셀 업데이트에 실패했습니다: ' + error.message, 'error');
             }
         }
-
-        // 빙고 체크
-        function checkBingo() {
-            const board = gameState.bingoBoard;
-            const lines = [
-                [0, 1, 2], [3, 4, 5], [6, 7, 8], // 가로
-                [0, 3, 6], [1, 4, 7], [2, 5, 8], // 세로
-                [0, 4, 8], [2, 4, 6] // 대각선
-            ];
-            
-            let completedLines = 0;
-            
-            lines.forEach(line => {
-                if (line.every(index => board[index].isFlipped)) {
-                    completedLines++;
-                }
-            });
-            
-            if (completedLines >= gameState.winCondition) {
-                showMessage(`🎉 빙고! ${gameState.playerName}님이 승리했습니다!`, 'success');
-            }
-        }
+        // 빙고 체크 함수는 checkAllPlayersBingo 함수에서 처리되므로 여기서는 삭제
 
         // 공유 링크 복사
         function copyShareLink() {
@@ -1064,8 +1130,6 @@
             }
         }
 
-        }
-
         // URL 파라미터 확인 (완전히 새로운 접근법)
         function checkURLParams() {
             const currentURL = window.location.href;
@@ -1073,15 +1137,16 @@
             console.log('현재 URL:', currentURL);
             
             // URL에서 ?room= 파라미터 찾기
-            const roomMatch = currentURL.match(/[?&]room=([^&]+)/);
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomCode = urlParams.get('room');
             
-            if (roomMatch && roomMatch[1]) {
-                const roomCode = roomMatch[1].toUpperCase();
-                console.log('🎯 방 코드 발견:', roomCode);
+            if (roomCode) {
+                const upperRoomCode = roomCode.toUpperCase();
+                console.log('🎯 방 코드 발견:', upperRoomCode);
                 
                 // 자동 입장 프로세스 시작
                 setTimeout(() => {
-                    performAutoJoin(roomCode);
+                    performAutoJoin(upperRoomCode);
                 }, 300); // 300ms 지연 후 실행
                 
                 return true;
@@ -1091,11 +1156,12 @@
             }
         }
 
-        // 자동 입장 실행 (개선된 버전)
+        // 자동 입장 실행
         function performAutoJoin(roomCode) {
             console.log('🚀 자동 입장 프로세스 시작:', roomCode);
             
             try {
+                // DOM 요소 확인
                 const joinSection = document.getElementById('join-room-section');
                 const roomCodeInput = document.getElementById('room-code');
                 const nameInput = document.getElementById('player-name');
@@ -1103,7 +1169,7 @@
                 
                 if (!joinSection || !roomCodeInput || !nameInput) {
                     console.error('❌ 필요한 DOM 요소를 찾을 수 없음');
-                    setTimeout(() => performAutoJoin(roomCode), 500);
+                    setTimeout(() => performAutoJoin(roomCode), 500); // 재시도
                     return;
                 }
                 
@@ -1118,26 +1184,21 @@
                     hintElement.classList.remove('hidden');
                 }
                 
+                // 포커스 설정
                 nameInput.focus();
                 
                 // 환영 메시지
-                showMessage(`🎉 초대 링크로 접속했습니다! 방 코드: ${roomCode}\n이름만 입력하고 Enter를 누르면 바로 입장됩니다!`, 'success');
+                showMessage(`🎉 초대 링크로 접속했습니다! 방 코드: ${roomCode}\n이름을 입력하고 Enter를 누르거나 "방 입장" 버튼을 클릭하세요!`, 'success');
                 
-                // 기존 이벤트 리스너 제거
-                nameInput.removeEventListener('keypress', nameInput._autoJoinHandler);
-                
-                // 새로운 자동 입장 핸들러
-                nameInput._autoJoinHandler = function(e) {
+                // Enter 키 이벤트 설정 (기존 이벤트 제거)
+                nameInput.removeEventListener('keypress', nameInput._currentKeypressHandler); // 기존 핸들러 제거
+                nameInput._currentKeypressHandler = function(e) { // 새로운 핸들러 저장
                     if (e.key === 'Enter' && e.target.value.trim()) {
                         console.log('⚡ Enter 키로 자동 입장 시도');
-                        
-                        // 방 코드가 미리 설정되어 있으므로 바로 입장
-                        const playerName = e.target.value.trim();
-                        joinRoomWithCode(playerName, roomCode);
+                        joinRoom(roomCode); // roomCode를 인자로 전달
                     }
                 };
-                
-                nameInput.addEventListener('keypress', nameInput._autoJoinHandler);
+                nameInput.addEventListener('keypress', nameInput._currentKeypressHandler);
                 
                 console.log('✅ 자동 입장 UI 설정 완료');
                 
@@ -1146,46 +1207,6 @@
             }
         }
 
-        // 방 코드가 미리 설정된 상태에서 입장하는 함수
-        async function joinRoomWithCode(playerName, roomCode) {
-            if (!playerName) {
-                showMessage('플레이어 이름을 입력해주세요!', 'error');
-                return;
-            }
-
-            try {
-                gameState.isHost = false;
-                gameState.playerName = playerName;
-                gameState.roomCode = roomCode;
-                gameState.roomRef = database.ref('rooms/' + roomCode);
-
-                // 방이 존재하는지 확인
-                const snapshot = await gameState.roomRef.once('value');
-                if (!snapshot.exists()) {
-                    showMessage('존재하지 않는 방 코드입니다!', 'error');
-                    return;
-                }
-
-                const roomData = snapshot.val();
-                if (roomData.gameStarted) {
-                    showMessage('이미 시작된 게임입니다!', 'error');
-                    return;
-                }
-
-                // 플레이어 추가
-                await gameState.roomRef.child('players').child(playerName).set({
-                    name: playerName,
-                    isHost: false,
-                    joinedAt: Date.now()
-                });
-
-                setupRoomListeners();
-                showMessage(`🎉 방에 입장했습니다! 방 코드: ${roomCode}`, 'success');
-                
-            } catch (error) {
-                showMessage('방 입장에 실패했습니다: ' + error.message, 'error');
-            }
-        }
         document.getElementById('mission-input').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 addMission();
@@ -1202,6 +1223,11 @@
             if (gameState.roomRef) {
                 gameState.roomRef.off();
             }
+        });
+
+        // 페이지 로드 시 URL 파라미터 확인
+        document.addEventListener('DOMContentLoaded', () => {
+            checkURLParams();
         });
     </script>
 </body>
