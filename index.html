@@ -215,10 +215,9 @@
             margin: 0 auto 30px auto;
         }
 
-        /* 빙고판 크기에 따른 그리드 컬럼 설정 */
+        /* 빙고판 크기에 따른 그리드 컬럼 설정 (3x3으로 고정) */
         .bingo-board.size-3 { grid-template-columns: repeat(3, 1fr); }
-        .bingo-board.size-4 { grid-template-columns: repeat(4, 1fr); }
-        .bingo-board.size-5 { grid-template-columns: repeat(5, 1fr); }
+
 
         /* 빙고 셀 */
         .bingo-cell {
@@ -229,14 +228,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px; /* 큰 보드에 맞춰 폰트 크기 조정 */
+            font-size: 20px; 
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s;
             color: #4a5568;
-            word-break: keep-all; /* 미션 단어들이 잘리지 않도록 */
+            word-break: keep-all; 
             text-align: center;
-            padding: 5px; /* 패딩 추가 */
+            padding: 5px; 
         }
 
         .bingo-cell:hover {
@@ -247,15 +246,15 @@
         .bingo-cell.flipped {
             background: #667eea;
             color: white;
-            font-size: 12px; /* 미션 텍스트를 위해 폰트 작게 */
+            font-size: 12px; 
         }
 
         /* Failed (실패) 상태 */
         .bingo-cell.failed {
-            background: #f56565; /* 빨간색 배경 */
+            background: #f56565; 
             color: white;
-            text-decoration: line-through; /* 취소선 */
-            opacity: 0.7; /* 약간 투명하게 */
+            text-decoration: line-through; 
+            opacity: 0.7; 
             font-size: 12px;
         }
 
@@ -311,9 +310,9 @@
             margin: 10px 0;
         }
 
-        /* 빙고 버튼 및 턴 종료 버튼 스타일 */
+        /* Bingo Button 및 턴 종료 버튼 스타일 */
         #bingo-button, #turn-end-button {
-            background-color: #4CAF50; /* 초록색 */
+            background-color: #4CAF50; 
             color: white;
             padding: 15px 30px;
             font-size: 24px;
@@ -323,13 +322,13 @@
             cursor: pointer;
             transition: background-color 0.3s ease, transform 0.1s ease;
             margin-top: 20px;
-            display: none; /* 초기에는 숨김 */
-            width: 100%; /* 너비 꽉 채움 */
-            max-width: 300px; /* 최대 너비 */
-            box-sizing: border-box; /* 패딩 포함 */
+            display: none; 
+            width: 100%; 
+            max-width: 300px; 
+            box-sizing: border-box; 
         }
         #turn-end-button {
-            background-color: #008CBA; /* 파란색 */
+            background-color: #008CBA; 
             margin-top: 10px;
         }
 
@@ -352,8 +351,61 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px; /* 버튼 사이 간격 */
+            gap: 10px; 
         }
+
+        /* 비밀번호 입력 팝업용 오버레이 */
+        .password-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000; /* 승리 오버레이보다 높게 설정 */
+        }
+
+        .password-prompt {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .password-prompt h3 {
+            margin-bottom: 20px;
+            color: #4a5568;
+        }
+
+        .password-prompt input {
+            width: calc(100% - 24px); /* 패딩 고려 */
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 5px;
+            font-size: 18px;
+        }
+
+        .password-prompt button {
+            padding: 10px 20px;
+            background-color: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 0 5px;
+        }
+        .password-prompt button:hover {
+            background-color: #5a67d8;
+        }
+
 
         /* 승리 메시지 오버레이 */
         .winner-overlay {
@@ -462,7 +514,7 @@
             <h1>🎯 밈주머니 빙고 게임!</h1>
             <p>밈주머니와 함께 즐기는 쐐기 빙고!</p>
             <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
-                v3.7 - 초대 링크 자동 입력 및 입장 문제 최종 해결
+                v3.8 - 3x3 고정, 초대링크 자동입력 개선, 호스트 비밀번호 별표 처리
             </div>
         </div>
 
@@ -521,7 +573,7 @@
                 </div>
                 <div class="missions-list" id="missions-list">
                     <div style="text-align: center; color: #a0aec0; padding: 20px;">
-                        미션을 추가해주세요 (최소 빙고판 크기 * 빙고판 크기 개수 필요)
+                        미션을 추가해주세요 (최소 9개 필요)
                     </div>
                 </div>
                 <div id="current-mission-count" style="text-align: center; margin-top: 10px; font-size: 14px; color: #718096;">
@@ -534,18 +586,9 @@
                     <label><strong>빙고판 크기:</strong></label>
                     <div class="radio-group">
                         <div class="radio-item">
-                            <input type="radio" name="board-size" value="3" id="size-3" checked>
-                            <label for="size-3">3x3</label>
+                            <input type="radio" name="board-size" value="3" id="size-3" checked disabled> <label for="size-3">3x3</label>
                         </div>
-                        <div class="radio-item">
-                            <input type="radio" name="board-size" value="4" id="size-4">
-                            <label for="size-4">4x4</label>
                         </div>
-                        <div class="radio-item">
-                            <input type="radio" name="board-size" value="5" id="size-5">
-                            <label for="size-5">5x5</label>
-                        </div>
-                    </div>
                 </div>
                 <div>
                     <label><strong>승리 조건:</strong></label>
@@ -648,7 +691,7 @@
             players: {},
             missions: [],
             winCondition: 1,
-            boardSize: 3, // 기본 3x3
+            boardSize: 3, // 3x3으로 고정
             maxPlayers: 2, // 기본 2명
             gameStarted: false,
             bingoBoard: [], // { number: 1, state: 'unflipped', mission: '미션1' } 형태로 변경
@@ -671,6 +714,59 @@
             }, 5000);
         }
 
+        // 비밀번호 입력 팝업 생성 함수
+        function createPasswordPrompt() {
+            return new Promise((resolve) => {
+                const overlay = document.createElement('div');
+                overlay.className = 'password-overlay';
+
+                const promptBox = document.createElement('div');
+                promptBox.className = 'password-prompt';
+                promptBox.innerHTML = `
+                    <h3>방장이 되려면 비밀번호를 입력하세요.</h3>
+                    <input type="password" id="host-password-input" placeholder="비밀번호" autofocus>
+                    <button id="password-submit-btn">확인</button>
+                    <button id="password-cancel-btn">취소</button>
+                `;
+                overlay.appendChild(promptBox);
+                document.body.appendChild(overlay);
+
+                const passwordInput = document.getElementById('host-password-input');
+                const submitBtn = document.getElementById('password-submit-btn');
+                const cancelBtn = document.getElementById('password-cancel-btn');
+
+                const cleanup = () => {
+                    document.body.removeChild(overlay);
+                    submitBtn.removeEventListener('click', handleSubmit);
+                    cancelBtn.removeEventListener('click', handleCancel);
+                    passwordInput.removeEventListener('keypress', handleKeyPress);
+                };
+
+                const handleSubmit = () => {
+                    const password = passwordInput.value;
+                    cleanup();
+                    resolve(password);
+                };
+
+                const handleCancel = () => {
+                    cleanup();
+                    resolve(null); // 취소 시 null 반환
+                };
+
+                const handleKeyPress = (e) => {
+                    if (e.key === 'Enter') {
+                        handleSubmit();
+                    }
+                };
+
+                submitBtn.addEventListener('click', handleSubmit);
+                cancelBtn.addEventListener('click', handleCancel);
+                passwordInput.addEventListener('keypress', handleKeyPress);
+                passwordInput.focus(); // 비밀번호 입력창에 포커스
+            });
+        }
+
+
         // 방 생성
         async function createRoom() {
             const playerName = document.getElementById('player-name').value.trim();
@@ -679,10 +775,11 @@
                 return;
             }
 
-            // 호스트 비밀번호 입력 요청
-            const password = prompt("방장이 되려면 비밀번호를 입력하세요:");
+            // 호스트 비밀번호 입력 요청 (별표 처리된 팝업 사용)
+            const password = await createPasswordPrompt(); // Promise를 기다림
+
             if (password !== HOST_PASSWORD) {
-                showMessage('비밀번호가 올바르지 않습니다!', 'error');
+                showMessage('비밀번호가 올바르지 않거나 취소되었습니다!', 'error');
                 return;
             }
 
@@ -690,7 +787,8 @@
                 gameState.isHost = true;
                 gameState.playerName = playerName;
                 gameState.roomCode = generateRoomCode();
-                gameState.boardSize = parseInt(document.querySelector('input[name="board-size"]:checked').value);
+                // gameState.boardSize는 이제 3으로 고정됩니다.
+                // gameState.boardSize = parseInt(document.querySelector('input[name="board-size"]:checked').value); // 이 라인 삭제
                 gameState.maxPlayers = parseInt(document.getElementById('max-players').value);
                 
                 // Firebase에 방 생성
@@ -708,7 +806,7 @@
                     missions: [],
                     gameStarted: false,
                     winCondition: 1,
-                    boardSize: gameState.boardSize,
+                    boardSize: gameState.boardSize, // 3으로 고정
                     maxPlayers: gameState.maxPlayers,
                     createdAt: Date.now(),
                     gameBoard: {}, 
@@ -790,8 +888,7 @@
                     joinedAt: Date.now()
                 });
 
-                // 방 입장 시 방 크기 및 최대 플레이어 수 동기화 (초기값으로 사용)
-                // 이 값들은 setupRoomListeners의 on('value')에서 다시 동기화될 것입니다.
+                // 방 입장 시 방 크기 및 최대 플레이어 수 동기화 (방장이 설정한 값을 따름)
                 gameState.boardSize = roomData.boardSize || 3;
                 gameState.maxPlayers = roomData.maxPlayers || 2; 
                 
@@ -812,7 +909,7 @@
                 const roomData = snapshot.val();
                 if (roomData) {
                     // `gameState`의 핵심 값들을 Firebase의 최신 `roomData`로 업데이트
-                    gameState.boardSize = roomData.boardSize || 3;
+                    gameState.boardSize = roomData.boardSize || 3; // 방장이 설정한 크기로 동기화
                     gameState.maxPlayers = roomData.maxPlayers || 2;
                     gameState.gameStarted = roomData.gameStarted || false;
                     gameState.winCondition = roomData.winCondition || 1;
@@ -840,7 +937,8 @@
                          document.getElementById('game-setup').style.display = 'none';
                          document.getElementById('game-area').style.display = 'block';
                          document.getElementById('current-room-code').textContent = gameState.roomCode;
-                         // 게임 시작 후 빙고판이 없거나, 크기가 일치하지 않으면 생성 시도
+                         
+                         // 게임 시작 후 빙고판이 없거나, 로컬 빙고판 크기가 방 크기와 다를 경우 생성 시도
                          const totalCells = gameState.boardSize * gameState.boardSize;
                          if (gameState.bingoBoard.length !== totalCells || document.getElementById('bingo-board').children.length !== totalCells) {
                              if (Object.keys(gameState.missionMap).length === totalCells) { // missionMap이 준비된 후에만 생성
@@ -957,7 +1055,8 @@
             
             try {
                 const winCondition = document.querySelector('input[name="win-condition"]:checked').value;
-                const selectedBoardSize = parseInt(document.querySelector('input[name="board-size"]:checked').value);
+                // boardSize는 이제 3으로 고정되므로, UI에서 가져오지 않음
+                const selectedBoardSize = 3; 
                 const selectedMaxPlayers = parseInt(document.getElementById('max-players').value);
 
                 await gameState.roomRef.update({
@@ -979,7 +1078,7 @@
             }
         }
 
-        // 게임 데이터 로드 (setupRoomListeners가 대부분 처리)
+        // 게임 데이터 로드 (setupRoomListeners가 대부분 처리하므로 간단해짐)
         async function loadGameData() {
             // setupRoomListeners의 on('value')가 이미 모든 roomData를 gameState에 동기화하므로,
             // 여기서 별도의 로드 로직은 필요 없으며, generateBingoBoard 호출만 확인
@@ -1039,7 +1138,7 @@
             
             const bingoBoardElement = document.getElementById('bingo-board');
             // bingoBoardElement의 자식 요소(셀)들이 아직 렌더링되지 않았으면 짧게 대기 후 재시도
-            if (bingoBoardElement.children.length === 0) {
+            if (bingoBoardElement.children.length === 0 || bingoBoardElement.children.length !== totalCells) {
                 setTimeout(() => syncBingoBoard(boardData), 50); 
                 return;
             }
@@ -1349,7 +1448,7 @@
                 players: {},
                 missions: [],
                 winCondition: 1,
-                boardSize: 3, 
+                boardSize: 3, // 3x3으로 고정됨
                 maxPlayers: 2, 
                 gameStarted: false,
                 bingoBoard: [],
@@ -1382,7 +1481,7 @@
             }
 
             // 빙고판 크기, 승리 조건, 최대 플레이어 수 UI를 기본값으로 재설정
-            document.getElementById('size-3').checked = true;
+            document.getElementById('size-3').checked = true; // 3x3으로 고정
             document.getElementById('win-1').checked = true;
             document.getElementById('max-players').value = 2;
 
@@ -1430,7 +1529,7 @@
         // 미션 목록 UI 및 현재 미션 개수 업데이트
         function updateMissionsDisplay() {
             const missionsList = document.getElementById('missions-list');
-            const requiredMissions = gameState.boardSize * gameState.boardSize;
+            const requiredMissions = gameState.boardSize * gameState.boardSize; // 3x3이므로 9개
 
             if (gameState.missions.length === 0) {
                 missionsList.innerHTML = `<div style="text-align: center; color: #a0aec0; padding: 20px;">미션을 추가해주세요 (최소 ${requiredMissions}개 필요)</div>`;
@@ -1448,13 +1547,13 @@
 
         // 빙고판 생성 (Firebase의 missionMap 기반)
         function generateBingoBoard() {
-            const size = gameState.boardSize;
-            const totalCells = size * size;
+            const size = gameState.boardSize; // 고정된 3
+            const totalCells = size * size; // 9
 
             const numbers = Array.from({length: totalCells}, (_, i) => i + 1);
             const shuffledNumbers = numbers.sort(() => Math.random() - 0.5);
             
-            // missionMap이 아직 로드되지 않았거나 크기가 맞지 않으면 기다림 (비동기 로드 시점 문제 해결)
+            // missionMap이 아직 로드되지 않았거나 크기가 맞지 않으면 기다림
             if (Object.keys(gameState.missionMap).length === 0 || Object.keys(gameState.missionMap).length !== totalCells) {
                 console.warn('generateBingoBoard: Mission map is not fully loaded yet or size mismatch. Retrying in 100ms...');
                 setTimeout(generateBingoBoard, 100); 
@@ -1493,7 +1592,8 @@
                 return;
             }
 
-            // (이전 요청에 따라) 턴과 관계없이 누구나 셀 상태를 변경할 수 있도록 턴 체크 로직을 제거
+            // 턴과 관계없이 누구나 셀 상태를 변경할 수 있도록 턴 체크 로직을 제거했습니다.
+            // 턴은 "턴 종료" 버튼을 눌러야만 넘어갑니다.
             
             const selectedNumber = gameState.bingoBoard[index].number; // 현재 셀의 숫자
             const missionToAssign = gameState.bingoBoard[index].mission; // 현재 셀의 미션 텍스트
@@ -1658,7 +1758,8 @@
             // 빙고판 크기 선택 시 미션 최소 개수 힌트 업데이트
             document.querySelectorAll('input[name="board-size"]').forEach(radio => {
                 radio.addEventListener('change', () => {
-                    const newSize = parseInt(radio.value);
+                    // 3x3으로 고정되었으므로 이 부분은 이제 UI 업데이트에만 영향
+                    const newSize = parseInt(radio.value); 
                     gameState.boardSize = newSize; 
                     updateMissionsDisplay(); 
                 });
