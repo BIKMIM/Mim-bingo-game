@@ -1465,10 +1465,12 @@
             document.getElementById('auto-join-hint').classList.add('hidden');
             
             // '새 방 만들기'와 '방 입장하기' 버튼 그룹을 다시 보이게 함
-            document.getElementById('main-action-buttons').classList.remove('hidden'); // hidden 클래스 제거
+            const mainActionButtons = document.getElementById('main-action-buttons');
+            mainActionButtons.classList.remove('hidden'); // hidden 클래스 제거
             document.getElementById('create-room-btn').style.display = 'inline-block';
             document.getElementById('show-join-room-btn').style.display = 'inline-block';
-
+            document.getElementById('room-code').readOnly = false; // 방 코드 수정 가능하게
+            
             document.getElementById('first-player-section').classList.add('hidden');
             document.getElementById('player-name').value = '';
             document.getElementById('room-code').value = '';
@@ -1681,7 +1683,8 @@
                 
                 // DOM이 완전히 로드된 후 performAutoJoin을 호출하도록 예약
                 document.addEventListener('DOMContentLoaded', () => {
-                    performAutoJoin(upperRoomCode);
+                    // DOM 요소들이 완전히 준비될 시간을 벌기 위해 100ms 지연
+                    setTimeout(() => performAutoJoin(upperRoomCode), 100);
                 });
                 return true;
             } else {
@@ -1769,9 +1772,8 @@
                     updateMissionsDisplay(); 
                 });
             });
-
-            // 페이지 로드 시 URL 파라미터 확인 (자동 입장 로직 시작)
-            checkURLParams();
+            // checkURLParams() 호출은 DOMContentLoaded 이벤트 리스너 밖으로 이동하여 페이지 로드 초기에 실행되도록 함
+            // checkURLParams(); // 이 부분은 이제 최하단에서 직접 호출되므로 주석 처리
         });
 
         // 페이지 이탈 시 Firebase 리스너 정리
@@ -1780,6 +1782,10 @@
                 gameState.roomRef.off(); // 방을 떠날 때 Firebase 리스너 해제
             }
         });
+
+        // URL 파라미터 확인 및 자동 입장 로직 시작 (HTML 파싱 직후 즉시 실행 시도)
+        // DOMContentLoaded 이벤트 내에서 호출하지 않고, 스크립트 로드 시점에 직접 호출
+        checkURLParams();
     </script>
 </body>
 </html>
