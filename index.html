@@ -293,7 +293,7 @@
             <h1>🎯 밈주머니 빙고 게임!</h1>
             <p>밈주머니와 함께 즐기는 쐐기 빙고!</p>
             <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
-                v2.1 - 자동입장 업데이트
+                v2.2 - 자동입장 버그수정
             </div>
         </div>
 
@@ -834,25 +834,44 @@
             const urlParams = new URLSearchParams(window.location.search);
             const roomCode = urlParams.get('room');
             
-            if (roomCode) {
+            console.log('URL 파라미터 체크:', roomCode); // 디버깅용
+            
+            if (roomCode && roomCode.trim()) {
+                console.log('방 코드 발견:', roomCode); // 디버깅용
+                
                 document.getElementById('room-code').value = roomCode.toUpperCase();
                 showJoinRoom();
                 
                 // 자동 입장을 위한 UI 변경
-                document.getElementById('player-name').placeholder = '이름을 입력하고 Enter를 누르면 바로 입장!';
-                document.getElementById('player-name').focus();
-                document.getElementById('auto-join-hint').classList.remove('hidden');
+                const nameInput = document.getElementById('player-name');
+                nameInput.placeholder = '이름을 입력하고 Enter를 누르면 바로 입장!';
+                nameInput.focus();
+                
+                const autoJoinHint = document.getElementById('auto-join-hint');
+                if (autoJoinHint) {
+                    autoJoinHint.classList.remove('hidden');
+                }
                 
                 showMessage(`🎯 방 코드 ${roomCode}로 초대되었습니다! 이름을 입력하고 Enter를 누르거나 "방 입장" 버튼을 클릭하세요!`, 'success');
                 
+                // 기존 이벤트 리스너 제거 후 새로 추가
+                const newNameInput = nameInput.cloneNode(true);
+                nameInput.parentNode.replaceChild(newNameInput, nameInput);
+                
                 // Enter 키로 자동 입장 설정
-                const nameInput = document.getElementById('player-name');
-                const autoJoinHandler = function(e) {
-                    if (e.key === 'Enter' && roomCode && e.target.value.trim()) {
+                newNameInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' && e.target.value.trim()) {
+                        console.log('Enter 키 입장 시도'); // 디버깅용
                         joinRoom();
                     }
-                };
-                nameInput.addEventListener('keypress', autoJoinHandler);
+                });
+                
+                // 포커스 재설정
+                setTimeout(() => {
+                    newNameInput.focus();
+                }, 100);
+            } else {
+                console.log('방 코드 없음'); // 디버깅용
             }
         }
         document.getElementById('mission-input').addEventListener('keypress', function(e) {
