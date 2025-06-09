@@ -315,6 +315,9 @@
                         <input type="text" id="room-code" placeholder="방 코드를 입력하세요" maxlength="8">
                     </div>
                     <button class="btn btn-primary" onclick="joinRoom()">방 입장</button>
+                    <p id="auto-join-hint" class="hidden" style="color: #667eea; font-size: 14px; margin-top: 10px;">
+                        💡 팁: 이름 입력 후 Enter키를 누르면 바로 입장됩니다!
+                    </p>
                 </div>
 
                 <div id="status-message"></div>
@@ -823,7 +826,7 @@
             }
         }
 
-        // URL 파라미터에서 방 코드 확인
+        // URL 파라미터에서 방 코드 확인 및 자동 입장 처리
         function checkURLParams() {
             const urlParams = new URLSearchParams(window.location.search);
             const roomCode = urlParams.get('room');
@@ -831,7 +834,22 @@
             if (roomCode) {
                 document.getElementById('room-code').value = roomCode.toUpperCase();
                 showJoinRoom();
-                showMessage(`방 코드 ${roomCode}가 자동으로 입력되었습니다!`, 'success');
+                
+                // 자동 입장을 위한 UI 변경
+                document.getElementById('player-name').placeholder = '이름을 입력하고 Enter를 누르면 바로 입장!';
+                document.getElementById('player-name').focus();
+                document.getElementById('auto-join-hint').classList.remove('hidden');
+                
+                showMessage(`🎯 방 코드 ${roomCode}로 초대되었습니다! 이름을 입력하고 Enter를 누르거나 "방 입장" 버튼을 클릭하세요!`, 'success');
+                
+                // Enter 키로 자동 입장 설정
+                const nameInput = document.getElementById('player-name');
+                const autoJoinHandler = function(e) {
+                    if (e.key === 'Enter' && roomCode && e.target.value.trim()) {
+                        joinRoom();
+                    }
+                };
+                nameInput.addEventListener('keypress', autoJoinHandler);
             }
         }
         document.getElementById('mission-input').addEventListener('keypress', function(e) {
