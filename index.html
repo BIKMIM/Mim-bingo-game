@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>멀티플레이어 빙고 게임</title>
+    <title>밈주머니 빙고 게임</title>
     <style>
         * {
             margin: 0;
@@ -117,6 +117,10 @@
             margin: 5px 0;
             border-radius: 6px;
             border-left: 4px solid #667eea;
+        }
+
+        .player-item.host {
+            border-left-color: #f56565;
         }
 
         .missions-section {
@@ -245,6 +249,28 @@
             display: none;
         }
 
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-style: italic;
+        }
+
+        .error {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+
+        .success {
+            background: #c6f6d5;
+            color: #2f855a;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -290,13 +316,15 @@
                     </div>
                     <button class="btn btn-primary" onclick="joinRoom()">방 입장</button>
                 </div>
+
+                <div id="status-message"></div>
             </div>
 
             <!-- 플레이어 목록 -->
             <div class="players-section">
                 <h3>👥 참가자 목록</h3>
                 <div class="players-list" id="players-list">
-                    <div class="player-item">플레이어가 입장하면 여기에 표시됩니다</div>
+                    <div class="loading">방에 입장하면 참가자가 표시됩니다</div>
                 </div>
             </div>
 
@@ -337,7 +365,7 @@
 
             <!-- 게임 시작 버튼 -->
             <div style="text-align: center;">
-                <button class="btn btn-primary" onclick="startGame()" style="font-size: 18px; padding: 15px 30px;">
+                <button class="btn btn-primary" id="start-game-btn" onclick="startGame()" style="font-size: 18px; padding: 15px 30px;">
                     🎮 게임 시작!
                 </button>
             </div>
@@ -360,35 +388,86 @@
         </div>
     </div>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
     <script>
+        // Firebase 설정 (여기에 복사한 설정을 넣으세요)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAqHKfUCypD_Jk7mXgH5u-OTXS7Dje4DZ8",
+            authDomain: "mim-bingo-game.firebaseapp.com",
+            databaseURL: "https://mim-bingo-game-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "mim-bingo-game",
+            storageBucket: "mim-bingo-game.firebasestorage.app",
+            messagingSenderId: "436254307510",
+            appId: "1:436254307510:web:23ad7c9a0d10d8ad26217"
+        };
+
+        // Firebase 초기화
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
         // 게임 상태 변수들
         let gameState = {
             isHost: false,
             roomCode: '',
             playerName: '',
-            players: [],
+            players: {},
             missions: [],
             winCondition: 1,
             gameStarted: false,
             bingoBoard: [],
-            currentTurn: 0
+            currentTurn: 0,
+            roomRef: null
         };
 
+        // 상태 메시지 표시
+        function showMessage(message, type = 'info') {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.innerHTML = `<div class="${type}">${message}</div>`;
+            setTimeout(() => {
+                statusDiv.innerHTML = '';
+            }, 5000);
+        }
+
         // 방 생성
-        function createRoom() {
+        async function createRoom() {
             const playerName = document.getElementById('player-name').value.trim();
             if (!playerName) {
-                alert('플레이어 이름을 입력해주세요!');
+                showMessage('플레이어 이름을 입력해주세요!', 'error');
                 return;
             }
 
-            gameState.isHost = true;
-            gameState.playerName = playerName;
-            gameState.roomCode = generateRoomCode();
-            gameState.players = [playerName];
-            
-            updatePlayersDisplay();
-            alert(`방이 생성되었습니다! 방 코드: ${gameState.roomCode}`);
+            try {
+                gameState.isHost = true;
+                gameState.playerName = playerName;
+                gameState.roomCode = generateRoomCode();
+                
+                // Firebase에 방 생성
+                gameState.roomRef = database.ref('rooms/' + gameState.roomCode);
+                
+                await gameState.roomRef.set({
+                    host: playerName,
+                    players: {
+                        [playerName]: {
+                            name: playerName,
+                            isHost: true,
+                            joinedAt: Date.now()
+                        }
+                    },
+                    missions: [],
+                    gameStarted: false,
+                    winCondition: 1,
+                    createdAt: Date.now()
+                });
+
+                setupRoomListeners();
+                showMessage(`방이 생성되었습니다! 방 코드: ${gameState.roomCode}`, 'success');
+                
+            } catch (error) {
+                showMessage('방 생성에 실패했습니다: ' + error.message, 'error');
+            }
         }
 
         // 방 입장 UI 표시
@@ -397,87 +476,196 @@
         }
 
         // 방 입장
-        function joinRoom() {
+        async function joinRoom() {
             const playerName = document.getElementById('player-name').value.trim();
             const roomCode = document.getElementById('room-code').value.trim().toUpperCase();
             
             if (!playerName) {
-                alert('플레이어 이름을 입력해주세요!');
+                showMessage('플레이어 이름을 입력해주세요!', 'error');
                 return;
             }
             
             if (!roomCode) {
-                alert('방 코드를 입력해주세요!');
+                showMessage('방 코드를 입력해주세요!', 'error');
                 return;
             }
 
-            gameState.isHost = false;
-            gameState.playerName = playerName;
-            gameState.roomCode = roomCode;
-            gameState.players = [playerName, '호스트']; // 임시로 호스트 표시
-            
-            updatePlayersDisplay();
-            alert(`방에 입장했습니다! 방 코드: ${roomCode}`);
+            try {
+                gameState.isHost = false;
+                gameState.playerName = playerName;
+                gameState.roomCode = roomCode;
+                gameState.roomRef = database.ref('rooms/' + roomCode);
+
+                // 방이 존재하는지 확인
+                const snapshot = await gameState.roomRef.once('value');
+                if (!snapshot.exists()) {
+                    showMessage('존재하지 않는 방 코드입니다!', 'error');
+                    return;
+                }
+
+                const roomData = snapshot.val();
+                if (roomData.gameStarted) {
+                    showMessage('이미 시작된 게임입니다!', 'error');
+                    return;
+                }
+
+                // 플레이어 추가
+                await gameState.roomRef.child('players').child(playerName).set({
+                    name: playerName,
+                    isHost: false,
+                    joinedAt: Date.now()
+                });
+
+                setupRoomListeners();
+                showMessage(`방에 입장했습니다! 방 코드: ${roomCode}`, 'success');
+                
+            } catch (error) {
+                showMessage('방 입장에 실패했습니다: ' + error.message, 'error');
+            }
+        }
+
+        // 방 데이터 리스너 설정
+        function setupRoomListeners() {
+            if (!gameState.roomRef) return;
+
+            // 플레이어 목록 리스너
+            gameState.roomRef.child('players').on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    gameState.players = snapshot.val();
+                    updatePlayersDisplay();
+                }
+            });
+
+            // 미션 목록 리스너
+            gameState.roomRef.child('missions').on('value', (snapshot) => {
+                gameState.missions = snapshot.exists() ? snapshot.val() : [];
+                updateMissionsDisplay();
+            });
+
+            // 게임 시작 리스너
+            gameState.roomRef.child('gameStarted').on('value', (snapshot) => {
+                if (snapshot.val() === true) {
+                    gameState.gameStarted = true;
+                    // 게임 화면으로 전환
+                    document.getElementById('game-setup').style.display = 'none';
+                    document.getElementById('game-area').style.display = 'block';
+                    document.getElementById('current-room-code').textContent = gameState.roomCode;
+                    loadGameData();
+                }
+            });
         }
 
         // 미션 추가
-        function addMission() {
+        async function addMission() {
             const missionInput = document.getElementById('mission-input');
             const mission = missionInput.value.trim();
             
             if (!mission) {
-                alert('미션 내용을 입력해주세요!');
+                showMessage('미션 내용을 입력해주세요!', 'error');
                 return;
             }
             
             if (gameState.missions.includes(mission)) {
-                alert('이미 추가된 미션입니다!');
+                showMessage('이미 추가된 미션입니다!', 'error');
                 return;
             }
             
-            gameState.missions.push(mission);
-            missionInput.value = '';
-            updateMissionsDisplay();
+            try {
+                const newMissions = [...gameState.missions, mission];
+                await gameState.roomRef.child('missions').set(newMissions);
+                missionInput.value = '';
+                
+            } catch (error) {
+                showMessage('미션 추가에 실패했습니다: ' + error.message, 'error');
+            }
         }
 
         // 미션 삭제
-        function deleteMission(index) {
-            gameState.missions.splice(index, 1);
-            updateMissionsDisplay();
+        async function deleteMission(index) {
+            try {
+                const newMissions = gameState.missions.filter((_, i) => i !== index);
+                await gameState.roomRef.child('missions').set(newMissions);
+                
+            } catch (error) {
+                showMessage('미션 삭제에 실패했습니다: ' + error.message, 'error');
+            }
         }
 
         // 게임 시작
-        function startGame() {
+        async function startGame() {
             if (!gameState.roomCode) {
-                alert('먼저 방을 생성하거나 입장해주세요!');
+                showMessage('먼저 방을 생성하거나 입장해주세요!', 'error');
                 return;
             }
             
             if (gameState.missions.length < 9) {
-                alert('미션이 최소 9개 필요합니다!');
+                showMessage('미션이 최소 9개 필요합니다!', 'error');
+                return;
+            }
+
+            if (!gameState.isHost) {
+                showMessage('방장만 게임을 시작할 수 있습니다!', 'error');
                 return;
             }
             
-            // 승리 조건 설정
-            const winCondition = document.querySelector('input[name="win-condition"]:checked').value;
-            gameState.winCondition = parseInt(winCondition);
-            
-            // 빙고판 생성
-            generateBingoBoard();
-            
-            // 화면 전환
-            document.getElementById('game-setup').style.display = 'none';
-            document.getElementById('game-area').style.display = 'block';
-            document.getElementById('current-room-code').textContent = gameState.roomCode;
-            
-            gameState.gameStarted = true;
+            try {
+                // 승리 조건 설정
+                const winCondition = document.querySelector('input[name="win-condition"]:checked').value;
+                
+                await gameState.roomRef.update({
+                    gameStarted: true,
+                    winCondition: parseInt(winCondition),
+                    startedAt: Date.now()
+                });
+                
+            } catch (error) {
+                showMessage('게임 시작에 실패했습니다: ' + error.message, 'error');
+            }
+        }
+
+        // 게임 데이터 로드
+        async function loadGameData() {
+            try {
+                const snapshot = await gameState.roomRef.once('value');
+                const roomData = snapshot.val();
+                
+                if (roomData) {
+                    gameState.winCondition = roomData.winCondition || 1;
+                    generateBingoBoard();
+                }
+                
+            } catch (error) {
+                showMessage('게임 데이터 로드에 실패했습니다: ' + error.message, 'error');
+            }
         }
 
         // 설정 화면으로 돌아가기
         function backToSetup() {
             document.getElementById('game-setup').style.display = 'block';
             document.getElementById('game-area').style.display = 'none';
-            gameState.gameStarted = false;
+            
+            // Firebase 리스너 정리
+            if (gameState.roomRef) {
+                gameState.roomRef.off();
+            }
+            
+            // 상태 초기화
+            gameState = {
+                isHost: false,
+                roomCode: '',
+                playerName: '',
+                players: {},
+                missions: [],
+                winCondition: 1,
+                gameStarted: false,
+                bingoBoard: [],
+                currentTurn: 0,
+                roomRef: null
+            };
+            
+            // UI 초기화
+            document.getElementById('players-list').innerHTML = '<div class="loading">방에 입장하면 참가자가 표시됩니다</div>';
+            document.getElementById('missions-list').innerHTML = '<div style="text-align: center; color: #a0aec0; padding: 20px;">미션을 추가해주세요 (최소 9개 필요)</div>';
         }
 
         // 방 코드 생성
@@ -493,14 +681,29 @@
         // 플레이어 목록 업데이트
         function updatePlayersDisplay() {
             const playersList = document.getElementById('players-list');
-            if (gameState.players.length === 0) {
-                playersList.innerHTML = '<div class="player-item">플레이어가 입장하면 여기에 표시됩니다</div>';
+            const playersArray = Object.values(gameState.players);
+            
+            if (playersArray.length === 0) {
+                playersList.innerHTML = '<div class="loading">방에 입장하면 참가자가 표시됩니다</div>';
                 return;
             }
             
-            playersList.innerHTML = gameState.players.map(player => 
-                `<div class="player-item">👤 ${player}</div>`
+            playersList.innerHTML = playersArray.map(player => 
+                `<div class="player-item ${player.isHost ? 'host' : ''}">
+                    ${player.isHost ? '👑' : '👤'} ${player.name} ${player.isHost ? '(방장)' : ''}
+                </div>`
             ).join('');
+
+            // 게임 시작 버튼 상태 업데이트
+            const startBtn = document.getElementById('start-game-btn');
+            if (gameState.isHost) {
+                startBtn.style.display = 'block';
+                startBtn.textContent = '🎮 게임 시작!';
+            } else {
+                startBtn.style.display = 'block';
+                startBtn.textContent = '방장이 게임을 시작하기를 기다리는 중...';
+                startBtn.disabled = true;
+            }
         }
 
         // 미션 목록 업데이트
@@ -546,7 +749,7 @@
             );
             
             if (availableMissions.length === 0) {
-                alert('사용할 수 있는 미션이 없습니다!');
+                showMessage('사용할 수 있는 미션이 없습니다!', 'error');
                 return;
             }
             
@@ -581,7 +784,7 @@
             });
             
             if (completedLines >= gameState.winCondition) {
-                alert(`🎉 빙고! ${gameState.playerName}님이 승리했습니다!`);
+                showMessage(`🎉 빙고! ${gameState.playerName}님이 승리했습니다!`, 'success');
             }
         }
 
@@ -589,6 +792,18 @@
         document.getElementById('mission-input').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 addMission();
+            }
+        });
+
+        // 방 코드 입력시 대문자 변환
+        document.getElementById('room-code').addEventListener('input', function(e) {
+            e.target.value = e.target.value.toUpperCase();
+        });
+
+        // 페이지 이탈시 정리
+        window.addEventListener('beforeunload', function() {
+            if (gameState.roomRef) {
+                gameState.roomRef.off();
             }
         });
     </script>
