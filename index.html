@@ -318,6 +318,20 @@
                 </div>
 
                 <div id="status-message"></div>
+                
+                <!-- 공유 링크 섹션 -->
+                <div id="share-section" class="hidden" style="margin-top: 20px;">
+                    <div style="background: #f7fafc; padding: 15px; border-radius: 8px; border: 2px solid #667eea;">
+                        <h4 style="color: #4a5568; margin-bottom: 10px;">🔗 친구 초대 링크</h4>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="text" id="share-link" readonly style="flex: 1; background: white; border: 1px solid #e2e8f0; padding: 8px; border-radius: 4px; font-size: 14px;">
+                            <button class="btn btn-primary" onclick="copyShareLink()" style="padding: 8px 16px;">복사</button>
+                        </div>
+                        <p style="color: #718096; font-size: 12px; margin-top: 8px;">
+                            이 링크를 친구들에게 보내면 바로 방에 입장할 수 있어요!
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <!-- 플레이어 목록 -->
@@ -463,6 +477,12 @@
                 });
 
                 setupRoomListeners();
+                
+                // 공유 링크 생성 및 표시
+                const shareLink = `${window.location.origin}${window.location.pathname}?room=${gameState.roomCode}`;
+                document.getElementById('share-link').value = shareLink;
+                document.getElementById('share-section').classList.remove('hidden');
+                
                 showMessage(`방이 생성되었습니다! 방 코드: ${gameState.roomCode}`, 'success');
                 
             } catch (error) {
@@ -788,7 +808,32 @@
             }
         }
 
-        // 엔터키로 미션 추가
+        // 공유 링크 복사
+        function copyShareLink() {
+            const shareLinkInput = document.getElementById('share-link');
+            shareLinkInput.select();
+            shareLinkInput.setSelectionRange(0, 99999); // 모바일 대응
+            
+            try {
+                document.execCommand('copy');
+                showMessage('링크가 복사되었습니다! 친구들에게 보내주세요! 📋', 'success');
+            } catch (err) {
+                // 복사 실패시 대체 방법
+                prompt('링크를 복사하세요:', shareLinkInput.value);
+            }
+        }
+
+        // URL 파라미터에서 방 코드 확인
+        function checkURLParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomCode = urlParams.get('room');
+            
+            if (roomCode) {
+                document.getElementById('room-code').value = roomCode.toUpperCase();
+                showJoinRoom();
+                showMessage(`방 코드 ${roomCode}가 자동으로 입력되었습니다!`, 'success');
+            }
+        }
         document.getElementById('mission-input').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 addMission();
