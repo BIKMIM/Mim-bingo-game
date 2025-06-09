@@ -422,7 +422,7 @@
             <h1>🎯 밈주머니 빙고 게임!</h1>
             <p>밈주머니와 함께 즐기는 쐐기 빙고!</p>
             <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
-                v3.1 - N x N 빙고, 3단계 셀, 빙고 버튼, 인원 제한, 미션 개수 표시, 호스트 비밀번호
+                v3.2 - 빙고판 크기 동기화, 셀 3단계 상태 변경, 빙고 버튼 표시/활성화 개선, 호스트 비밀번호
             </div>
         </div>
 
@@ -616,7 +616,7 @@
             canClaimBingo: false // 빙고 버튼 활성화 여부
         };
 
-        // 호스트 전용 비밀번호
+        // 호스트 전용 비밀번호 (테스트용: 051012)
         const HOST_PASSWORD = "051012"; 
 
         // 상태 메시지 표시
@@ -841,14 +841,17 @@
                     // 빙고 버튼이 눌렸다면, 빙고 버튼 비활성화
                     document.getElementById('bingo-button').disabled = true;
                     // 승자가 아직 확정되지 않았고, 내가 주장자가 아니라면 메시지 표시
-                    if (!gameState.roomData || !gameState.roomData.winner) {
-                        // 너무 빠르게 메시지가 뜨지 않도록 약간의 지연
-                        setTimeout(() => {
-                            if (claimData.claimer !== gameState.playerName && !gameState.roomData.winner) {
-                                showMessage(`${claimData.claimer}님이 먼저 빙고를 주장했습니다!`, 'info');
-                            }
-                        }, 500);
-                    }
+                    // roomData를 사용하기 위해 한번 더 snapshot을 가져옴 (또는 gameState.roomData를 업데이트하는 로직 추가)
+                    gameState.roomRef.once('value').then(roomSnapshot => {
+                        const roomData = roomSnapshot.val();
+                        if (!roomData || !roomData.winner) { // 아직 winner가 확정되지 않았을 때만
+                            setTimeout(() => {
+                                if (claimData.claimer !== gameState.playerName && !roomData.winner) {
+                                    showMessage(`${claimData.claimer}님이 먼저 빙고를 주장했습니다!`, 'info');
+                                }
+                            }, 500);
+                        }
+                    });
                 }
             });
         }
@@ -1027,15 +1030,20 @@
             }
 
             const totalCells = gameState.boardSize * gameState.boardSize;
-            if (!boardData || !gameState.bingoBoard || gameState.bingoBoard.length !== totalCells) {
-                // 게임이 시작되었고 missionMap이 로드되었지만 bingoBoard가 없거나 크기가 다르면 생성 시도
-                if (gameState.gameStarted && Object.keys(gameState.missionMap).length === totalCells && gameState.bingoBoard.length !== totalCells) {
-                    generateBingoBoard(); 
+            // 빙고판이 없거나 크기가 다르면 새로 생성 시도
+            if (!boardData || gameState.bingoBoard.length !== totalCells) { 
+                 if (gameState.gameStarted && Object.keys(gameState.missionMap).length === totalCells) {
+                    generateBingoBoard(); // missionMap이 로드된 후 빙고판을 한 번만 생성
                 }
                 return;
             }
             
             const bingoBoardElement = document.getElementById('bingo-board');
+            // bingoBoardElement가 아직 없으면 생성될 때까지 대기
+            if (!bingoBoardElement.innerHTML) {
+                setTimeout(() => syncBingoBoard(boardData), 50); // 재시도
+                return;
+            }
             const cells = bingoBoardElement.querySelectorAll('.bingo-cell');
             let flippedCount = 0; 
 
@@ -1047,6 +1055,7 @@
                     const cellElement = cells[targetCellIndex];
                     
                     // 로컬 gameState.bingoBoard와 UI 업데이트
+                    // Firebase의 최신 상태로 로컬 상태를 업데이트
                     gameState.bingoBoard[targetCellIndex].state = cellData.state; 
                     gameState.bingoBoard[targetCellIndex].mission = cellData.mission;
 
@@ -1091,7 +1100,8 @@
                 let rowComplete = true;
                 for (let j = 0; j < size; j++) {
                     const index = i * size + j;
-                    if (!board[index] || board[index].state !== 'flipped') { // 실패한 칸은 빙고로 인정 안함
+                    // 실패한 칸은 빙고로 인정 안함
+                    if (!board[index] || board[index].state !== 'flipped') { 
                         rowComplete = false;
                         break;
                     }
@@ -1104,7 +1114,8 @@
                 let colComplete = true;
                 for (let i = 0; i < size; i++) {
                     const index = i * size + j;
-                    if (!board[index] || board[index].state !== 'flipped') { // 실패한 칸은 빙고로 인정 안함
+                    // 실패한 칸은 빙고로 인정 안함
+                    if (!board[index] || board[index].state !== 'flipped') { 
                         colComplete = false;
                         break;
                     }
@@ -1116,7 +1127,8 @@
             let diag1Complete = true;
             for (let i = 0; i < size; i++) {
                 const index = i * size + i;
-                if (!board[index] || board[index].state !== 'flipped') { // 실패한 칸은 빙고로 인정 안함
+                // 실패한 칸은 빙고로 인정 안함
+                if (!board[index] || board[index].state !== 'flipped') { 
                     diag1Complete = false;
                     break;
                 }
@@ -1127,7 +1139,8 @@
             let diag2Complete = true;
             for (let i = 0; i < size; i++) {
                 const index = i * size + (size - 1 - i);
-                if (!board[index] || board[index].state !== 'flipped') { // 실패한 칸은 빙고로 인정 안함
+                // 실패한 칸은 빙고로 인정 안함
+                if (!board[index] || board[index].state !== 'flipped') { 
                     diag2Complete = false;
                     break;
                 }
@@ -1158,10 +1171,7 @@
             gameState.roomRef.child('gameEnded').once('value', (snapshot) => {
                 if (snapshot.val() === true) {
                     bingoButton.disabled = true;
-                    // 게임이 종료되었는데 빙고 버튼이 보인다면 숨김 (재시작 방지)
-                    if (snapshot.val() === true && completedLines >= requiredLines) {
-                        bingoButton.style.display = 'none'; 
-                    }
+                    bingoButton.style.display = 'none'; // 게임 종료 시 빙고 버튼 숨김
                 }
             });
         }
@@ -1186,6 +1196,7 @@
                 showMessage(`${roomData.winner}님이 이미 승리했습니다!`, 'error');
                 return;
             }
+            // 이미 다른 플레이어가 빙고를 주장했다면
             if (roomData.bingoClaimed) {
                  showMessage('다른 플레이어가 이미 빙고를 주장했습니다!', 'error');
                  return;
@@ -1213,7 +1224,7 @@
                     });
                     showMessage('🎉 빙고를 주장했습니다! 당신이 승리합니다!', 'success');
                 } else {
-                    // 빙고 주장 실패 (다른 플레이어가 먼저 주장함)
+                    // 트랜잭션이 취소된 경우 (다른 플레이어가 먼저 주장함)
                     // 이 메시지는 bingoClaimed 리스너에서 처리될 가능성이 높지만, 명시적으로 다시 표시
                     showMessage('앗! 다른 플레이어가 먼저 빙고를 주장했습니다!', 'error');
                 }
@@ -1281,14 +1292,14 @@
                 currentTurn: 0,
                 playerList: [],
                 roomRef: null,
-                missionMap: {},
+                missionMap: {}, 
                 canClaimBingo: false
             };
             
             // UI 초기화
             document.getElementById('players-list').innerHTML = '<div class="loading">방에 입장하면 참가자가 표시됩니다</div>';
-            document.getElementById('missions-list').innerHTML = '<div style="text-align: center; color: #a0aec0; padding: 20px;">미션을 추가해주세요 (최소 9개 필요)</div>';
-            document.getElementById('current-mission-count').textContent = '현재 등록된 미션: 0개'; // 미션 개수 초기화
+            document.getElementById('missions-list').innerHTML = `<div style="text-align: center; color: #a0aec0; padding: 20px;">미션을 추가해주세요 (최소 ${gameState.boardSize * gameState.boardSize}개 필요)</div>`;
+            document.getElementById('current-mission-count').textContent = '현재 등록된 미션: 0개'; 
             document.getElementById('share-section').classList.add('hidden');
             document.getElementById('join-room-section').classList.add('hidden');
             document.getElementById('auto-join-hint').classList.add('hidden');
@@ -1383,15 +1394,19 @@
                 setTimeout(generateBingoBoard, 100); 
                 return;
             }
+            // 이미 생성된 빙고판이 있다면 다시 생성하지 않음 (초기화 시에만)
+            if (gameState.bingoBoard.length === totalCells && document.getElementById('bingo-board').children.length > 0) {
+                return; 
+            }
 
             gameState.bingoBoard = shuffledNumbers.map((num) => ({
                 number: num, 
-                state: 'unflipped', // 'unflipped', 'flipped', 'failed'
+                state: 'unflipped', 
                 mission: gameState.missionMap[num] || `미션 ${num}` 
             }));
             
             const bingoBoardElement = document.getElementById('bingo-board');
-            bingoBoardElement.className = `bingo-board size-${size}`; // CSS 클래스 추가
+            bingoBoardElement.className = `bingo-board size-${size}`; 
             bingoBoardElement.innerHTML = gameState.bingoBoard.map((cell, index) => 
                 `<div class="bingo-cell" onclick="flipCell(${index})">${cell.number}</div>`
             ).join('');
@@ -1413,40 +1428,33 @@
                 return;
             }
             
-            const currentCell = gameState.bingoBoard[index];
-            const selectedNumber = currentCell.number;
-            const missionToAssign = currentCell.mission;
+            const selectedNumber = gameState.bingoBoard[index].number;
+            const missionToAssign = gameState.bingoBoard[index].mission;
 
             try {
                 const result = await gameState.roomRef.child('gameBoard').child(selectedNumber).transaction((currentData) => {
                     let stateInFirebase = currentData ? currentData.state : 'unflipped';
+                    let nextStateForFirebase;
 
                     if (roomData.gameEnded || roomData.winner) { // 트랜잭션 중 게임 종료 확인
                         return undefined;
                     }
                     
-                    let newStateForFirebase;
+                    // 현재 Firebase 상태에 따라 다음 상태 결정
                     if (stateInFirebase === 'unflipped') {
-                        newStateForFirebase = 'flipped';
+                        nextStateForFirebase = 'flipped';
                     } else if (stateInFirebase === 'flipped') {
-                        newStateForFirebase = 'failed';
+                        nextStateForFirebase = 'failed';
                     } else { // 'failed' -> 'unflipped'
-                        newStateForFirebase = 'unflipped';
+                        nextStateForFirebase = 'unflipped';
                     }
 
-                    // 로컬에서 이미 변경된 상태가 아니라면 (즉, Firebase에 있는 최신 상태와 내가 클릭한 상태가 동일해야 함)
-                    // 또는 Firebase 상태가 'unflipped'이거나 'flipped'인데 내가 'failed'로 바꾸려 할 때
-                    // 이 부분이 복잡한 동시성 문제를 일으킬 수 있으니, 최대한 단순화
-                    if (stateInFirebase === currentCell.state) { // Firebase와 로컬의 인지 상태가 같을 때만 허용
-                         return {
-                            state: newStateForFirebase,
-                            mission: missionToAssign,
-                            changedBy: gameState.playerName,
-                            changedAt: firebase.database.ServerValue.TIMESTAMP
-                        };
-                    } else {
-                        return undefined; // 상태 불일치 -> 트랜잭션 취소
-                    }
+                    return {
+                        state: nextStateForFirebase,
+                        mission: missionToAssign,
+                        changedBy: gameState.playerName,
+                        changedAt: firebase.database.ServerValue.TIMESTAMP
+                    };
                 });
 
                 if (result.committed) {
@@ -1455,7 +1463,8 @@
                         currentTurn: nextTurn
                     });
                 } else {
-                    showMessage('이미 다른 플레이어가 이 칸을 선택했거나 상태가 변경되었습니다. 다시 확인해주세요!', 'error');
+                    // 트랜잭션이 취소된 경우 (동시에 다른 플레이어가 변경했거나 이미 게임 종료)
+                    showMessage('이 칸은 이미 변경되었거나 게임이 종료되었습니다. 다시 확인해주세요!', 'error');
                 }
                 
             } catch (error) {
@@ -1558,8 +1567,8 @@
         document.querySelectorAll('input[name="board-size"]').forEach(radio => {
             radio.addEventListener('change', () => {
                 const newSize = parseInt(radio.value);
-                gameState.boardSize = newSize; // Update gameState immediately
-                updateMissionsDisplay(); // Call to refresh mission count hint
+                gameState.boardSize = newSize; 
+                updateMissionsDisplay(); 
             });
         });
 
