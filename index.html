@@ -9,7 +9,13 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-        }
+            // 빙고판 리스너 (실시간 동기화)
+            gameState.roomRef.child('gameBoard').on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const boardData = snapshot.val();
+                    syncBingoBoard(boardData);
+                }
+            });
 
         body {
             font-family: Arial, sans-serif;
@@ -293,7 +299,7 @@
             <h1>🎯 밈주머니 빙고 게임!</h1>
             <p>밈주머니와 함께 즐기는 쐐기 빙고!</p>
             <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
-                v2.5 - 빙고 체크 및 선공 선택 추가
+                v2.6 - 승리 메시지 및 초대링크 완전 수정
             </div>
         </div>
 
@@ -605,11 +611,20 @@
                 updateTurnDisplay();
             });
 
-            // 빙고판 리스너 (실시간 동기화)
-            gameState.roomRef.child('gameBoard').on('value', (snapshot) => {
+            // 승자 발표 리스너 추가
+            gameState.roomRef.child('winner').on('value', (snapshot) => {
                 if (snapshot.exists()) {
-                    const boardData = snapshot.val();
-                    syncBingoBoard(boardData);
+                    const winner = snapshot.val();
+                    if (winner) {
+                        showMessage(`🎉🏆 게임 종료! ${winner}님이 ${gameState.winCondition}줄 빙고로 승리했습니다! 🏆🎉`, 'success');
+                        
+                        // 모든 플레이어에게 승리 메시지 표시
+                        setTimeout(() => {
+                            if (confirm(`축하합니다! ${winner}님이 승리했습니다!\n\n설정 화면으로 돌아가시겠습니까?`)) {
+                                backToSetup();
+                            }
+                        }, 2000);
+                    }
                 }
             });
         }
@@ -823,14 +838,8 @@
                                 endedAt: Date.now()
                             });
                             
-                            showMessage(`🎉 축하합니다! ${gameState.playerName}님이 ${gameState.winCondition}줄 빙고로 승리했습니다!`, 'success');
-                            
-                            // 3초 후 설정 화면 복귀 옵션
-                            setTimeout(() => {
-                                if (confirm('게임이 끝났습니다. 설정 화면으로 돌아가시겠습니까?')) {
-                                    backToSetup();
-                                }
-                            }, 3000);
+                            console.log(`🏆 승리! ${gameState.playerName}님이 ${gameState.winCondition}줄 빙고 달성!`);
+                        }
                         }
                     });
                 }
@@ -1039,56 +1048,81 @@
             }
         }
 
-        // URL 파라미터 확인 (더 간단하고 확실한 방법)
+        }
+
+        // URL 파라미터 확인 (완전히 새로운 접근법)
         function checkURLParams() {
-            const urlString = window.location.href;
-            console.log('전체 URL:', urlString);
+            const currentURL = window.location.href;
+            console.log('=== URL 체크 시작 ===');
+            console.log('현재 URL:', currentURL);
             
-            // ?room= 문자열을 직접 찾기
-            if (urlString.includes('?room=')) {
-                const roomPart = urlString.split('?room=')[1];
-                const roomCode = roomPart ? roomPart.split('&')[0] : null;
+            // URL에서 ?room= 파라미터 찾기
+            const roomMatch = currentURL.match(/[?&]room=([^&]+)/);
+            
+            if (roomMatch && roomMatch[1]) {
+                const roomCode = roomMatch[1].toUpperCase();
+                console.log('🎯 방 코드 발견:', roomCode);
                 
-                console.log('추출된 방 코드:', roomCode);
+                // 자동 입장 프로세스 시작
+                setTimeout(() => {
+                    performAutoJoin(roomCode);
+                }, 300); // 300ms 지연 후 실행
                 
-                if (roomCode && roomCode.length > 0) {
-                    console.log('자동 입장 시작:', roomCode);
-                    
-                    // 강제로 방 입장 모드로 전환
-                    const joinSection = document.getElementById('join-room-section');
-                    const roomCodeInput = document.getElementById('room-code');
-                    const nameInput = document.getElementById('player-name');
-                    
-                    // 방 입장 섹션 표시
-                    joinSection.classList.remove('hidden');
-                    roomCodeInput.value = roomCode.toUpperCase();
-                    
-                    // 플레이어 이름 입력 필드 포커스 및 플레이스홀더 변경
-                    nameInput.placeholder = '이름을 입력하고 Enter를 누르면 바로 입장!';
-                    nameInput.focus();
-                    
-                    // 힌트 메시지 표시
-                    const hintElement = document.getElementById('auto-join-hint');
-                    if (hintElement) {
-                        hintElement.classList.remove('hidden');
-                    }
-                    
-                    // 안내 메시지
-                    showMessage(`🎯 초대 링크로 접속했습니다! 방 코드: ${roomCode} | 이름을 입력하고 Enter를 누르세요!`, 'success');
-                    
-                    // Enter 키 이벤트 (기존 이벤트 제거 후 추가)
-                    nameInput.onkeypress = function(e) {
-                        if (e.key === 'Enter' && this.value.trim()) {
-                            console.log('Enter 키로 입장 시도');
-                            joinRoom();
-                        }
-                    };
-                    
-                    return true;
-                }
+                return true;
+            } else {
+                console.log('❌ URL에 방 코드 없음');
+                return false;
             }
-            console.log('URL에 방 코드 없음');
-            return false;
+        }
+
+        // 자동 입장 실행
+        function performAutoJoin(roomCode) {
+            console.log('🚀 자동 입장 프로세스 시작:', roomCode);
+            
+            try {
+                // DOM 요소 확인
+                const joinSection = document.getElementById('join-room-section');
+                const roomCodeInput = document.getElementById('room-code');
+                const nameInput = document.getElementById('player-name');
+                const hintElement = document.getElementById('auto-join-hint');
+                
+                if (!joinSection || !roomCodeInput || !nameInput) {
+                    console.error('❌ 필요한 DOM 요소를 찾을 수 없음');
+                    setTimeout(() => performAutoJoin(roomCode), 500); // 재시도
+                    return;
+                }
+                
+                console.log('✅ DOM 요소 모두 준비됨');
+                
+                // UI 변경
+                joinSection.classList.remove('hidden');
+                roomCodeInput.value = roomCode;
+                nameInput.placeholder = '이름을 입력하고 Enter를 누르면 바로 입장!';
+                
+                if (hintElement) {
+                    hintElement.classList.remove('hidden');
+                }
+                
+                // 포커스 설정
+                nameInput.focus();
+                
+                // 환영 메시지
+                showMessage(`🎉 초대 링크로 접속했습니다! 방 코드: ${roomCode}\n이름을 입력하고 Enter를 누르거나 "방 입장" 버튼을 클릭하세요!`, 'success');
+                
+                // Enter 키 이벤트 설정 (기존 이벤트 제거)
+                nameInput.onkeypress = null; // 기존 이벤트 제거
+                nameInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' && e.target.value.trim()) {
+                        console.log('⚡ Enter 키로 자동 입장 시도');
+                        joinRoom();
+                    }
+                });
+                
+                console.log('✅ 자동 입장 UI 설정 완료');
+                
+            } catch (error) {
+                console.error('❌ 자동 입장 오류:', error);
+            }
         }
         document.getElementById('mission-input').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
