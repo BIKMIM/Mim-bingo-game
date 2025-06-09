@@ -514,7 +514,7 @@
             <h1>🎯 밈주머니 빙고 게임!</h1>
             <p>밈주머니와 함께 즐기는 쐐기 빙고!</p>
             <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
-                v3.9 - 초대 링크 자동 입력/입장 완벽 개선, 호스트 비밀번호 별표 처리
+                v3.10 - 초대 링크 자동 입력/입장 최종 개선
             </div>
         </div>
 
@@ -526,8 +526,7 @@
                     <input type="text" id="player-name" placeholder="당신의 닉네임을 입력하세요" maxlength="10">
                 </div>
                 
-                <div class="button-group">
-                    <button class="btn btn-primary" id="create-room-btn" onclick="createRoom()">새 방 만들기</button>
+                <div class="button-group" id="main-action-buttons"> <button class="btn btn-primary" id="create-room-btn" onclick="createRoom()">새 방 만들기</button>
                     <button class="btn btn-secondary" id="show-join-room-btn" onclick="showJoinRoom()">방 입장하기</button>
                 </div>
 
@@ -1464,7 +1463,9 @@
             document.getElementById('share-section').classList.add('hidden');
             document.getElementById('join-room-section').classList.add('hidden');
             document.getElementById('auto-join-hint').classList.add('hidden');
+            
             // '새 방 만들기'와 '방 입장하기' 버튼 그룹을 다시 보이게 함
+            document.getElementById('main-action-buttons').classList.remove('hidden'); // hidden 클래스 제거
             document.getElementById('create-room-btn').style.display = 'inline-block';
             document.getElementById('show-join-room-btn').style.display = 'inline-block';
 
@@ -1593,9 +1594,6 @@
                 showMessage('게임이 이미 종료되었거나 승자가 결정되었습니다!', 'error');
                 return;
             }
-
-            // (이전 요청에 따라) 턴과 관계없이 누구나 셀 상태를 변경할 수 있도록 턴 체크 로직을 제거했습니다.
-            // 턴은 "턴 종료" 버튼을 눌러야만 넘어갑니다.
             
             const selectedNumber = gameState.bingoBoard[index].number; // 현재 셀의 숫자
             const missionToAssign = gameState.bingoBoard[index].mission; // 현재 셀의 미션 텍스트
@@ -1700,11 +1698,10 @@
             const roomCodeInput = document.getElementById('room-code');
             const nameInput = document.getElementById('player-name');
             const hintElement = document.getElementById('auto-join-hint');
-            const createRoomBtn = document.getElementById('create-room-btn'); // 추가
-            const showJoinRoomBtn = document.getElementById('show-join-room-btn'); // 추가
-            
+            const mainActionButtons = document.getElementById('main-action-buttons'); // 버튼 그룹 ID 사용
+
             // DOM 요소가 아직 준비되지 않았다면 재시도 (재귀 호출)
-            if (!joinSection || !roomCodeInput || !nameInput || !hintElement || !createRoomBtn || !showJoinRoomBtn) {
+            if (!joinSection || !roomCodeInput || !nameInput || !hintElement || !mainActionButtons) {
                 console.error('❌ 필요한 DOM 요소를 찾을 수 없음. 재시도합니다.');
                 setTimeout(() => performAutoJoin(roomCode), 100); 
                 return;
@@ -1712,10 +1709,9 @@
             
             console.log('✅ DOM 요소 모두 준비됨');
             
-            // "새 방 만들기"와 "방 입장하기" 버튼 숨기기
-            createRoomBtn.style.display = 'none';
-            showJoinRoomBtn.style.display = 'none';
-
+            // '새 방 만들기'와 '방 입장하기' 버튼 그룹 숨기기
+            mainActionButtons.classList.add('hidden'); // 버튼 그룹 자체를 숨김
+            
             // "방 입장" 섹션만 보이게 하기
             joinSection.classList.remove('hidden');
             roomCodeInput.value = roomCode; // 방 코드 자동 입력
