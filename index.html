@@ -511,7 +511,7 @@
             <h1>🎯 밈주머니 빙고 게임!</h1>
             <p>밈주머니와 함께 즐기는 쐐기 빙고!</p>
             <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
-                v4.4 - 턴 종료 버튼 활성화 및 초대 링크 속도 개선
+                v4.5 - 선공후공 버그 수정/ 초대받은 사람 UI 변경
             </div>
         </div>
 
@@ -577,7 +577,7 @@
                 </div>
             </div>
 
-            <div class="game-options">
+            <div class="game-options" id="game-options-section">
                 <div>
                     <label><strong>빙고판 크기:</strong></label>
                     <div class="radio-group">
@@ -956,8 +956,10 @@
                     updateBingoCellClickability(); // 셀 클릭 가능 여부 업데이트
                     
                     // 방장 전용 UI 업데이트 (선공 선택)
+                    // 방장이고, 플레이어가 2명 이상일 때만 선공 선택 옵션을 표시
                     if (gameState.isHost && gameState.playerList.length > 1) {
-                        updateFirstPlayerOptions();
+                        document.getElementById('first-player-section').classList.remove('hidden');
+                        updateFirstPlayerOptions(); // 플레이어 목록에 따라 드롭다운 업데이트
                     } else {
                         document.getElementById('first-player-section').classList.add('hidden');
                     }
@@ -1098,20 +1100,18 @@
 
         // 선공 플레이어 옵션 업데이트 (방장에게만 보임)
         function updateFirstPlayerOptions() {
-            const firstPlayerSection = document.getElementById('first-player-section');
             const firstPlayerSelect = document.getElementById('first-player-select');
-            
-            if (gameState.playerList.length > 1) {
-                firstPlayerSection.classList.remove('hidden');
-                firstPlayerSelect.innerHTML = '<option value="">선공을 선택하세요</option>';
-                gameState.playerList.forEach(playerName => {
-                    const option = document.createElement('option');
-                    option.value = playerName;
-                    option.textContent = playerName;
-                    firstPlayerSelect.appendChild(option);
-                });
-            } else {
-                firstPlayerSection.classList.add('hidden');
+            // 드롭다운 초기화
+            firstPlayerSelect.innerHTML = '<option value="">선공을 선택하세요</option>';
+            gameState.playerList.forEach(playerName => {
+                const option = document.createElement('option');
+                option.value = playerName;
+                option.textContent = playerName;
+                firstPlayerSelect.appendChild(option);
+            });
+            // Firebase에 현재 턴이 이미 설정되어 있다면 해당 플레이어 선택
+            if (gameState.currentTurn !== null && gameState.playerList[gameState.currentTurn]) {
+                 firstPlayerSelect.value = gameState.playerList[gameState.currentTurn];
             }
         }
 
@@ -1212,30 +1212,39 @@
             const cells = document.querySelectorAll('.bingo-cell');
             const currentPlayerName = gameState.playerList[gameState.currentTurn];
             const isMyTurn = currentPlayerName === gameState.playerName;
-            const gameEnded = (gameState.roomRef && gameState.roomRef.gameEnded) || (gameState.roomRef && gameState.roomRef.winner);
+            // 게임 종료 여부는 roomData.gameEnded 또는 roomData.winner로 확인
+            // setupRoomListeners에서 roomData를 통해 직접 확인하므로, 여기서는 해당 상태를 참조
+            const gameEnded = gameState.gameStarted && (gameState.roomRef && gameState.roomRef.gameEnded || gameState.roomRef && gameState.roomRef.winner);
+
 
             cells.forEach((cellElement, index) => {
                 const cellNumber = gameState.bingoBoard[index].number;
                 const isFlippedCommon = gameState.flippedNumbers.includes(cellNumber); // 이 숫자가 공통으로 뒤집혔는지
 
-                if (gameEnded) {
+                if (gameEnded) { // 게임이 종료되었다면 모든 셀 클릭 불가
                     cellElement.style.pointerEvents = 'none';
                     cellElement.style.opacity = '0.7';
                 } else if (isMyTurn) {
-                    // 내 턴이면, 아직 공통으로 뒤집히지 않았고 (hasMadeMoveInTurn == false 상태일 때만), 
-                    // 또는 이미 공통으로 뒤집혔다면 (자신의 상태 변경 목적) 클릭 가능
-                    if (!gameState.hasMadeMoveInTurn || isFlippedCommon) {
-                         cellElement.style.pointerEvents = 'auto';
-                         cellElement.style.opacity = '1';
-                    } else { // 내 턴에 이미 하나 클릭했고, 아직 공통으로 뒤집히지 않은 다른 셀
-                         cellElement.style.pointerEvents = 'none';
-                         cellElement.style.opacity = '0.5';
+                    // 내 턴일 때
+                    if (!isFlippedCommon && !gameState.hasMadeMoveInTurn) {
+                        // 아직 공통으로 뒤집히지 않았고 (내가 아직 이번 턴에 선택 안 했다면) -> 클릭 가능
+                        cellElement.style.pointerEvents = 'auto';
+                        cellElement.style.opacity = '1';
+                    } else if (isFlippedCommon) {
+                        // 이미 공통으로 뒤집힌 숫자 -> 내 개인 빙고판 상태 (flipped/failed)를 변경하기 위해 클릭 가능
+                        cellElement.style.pointerEvents = 'auto';
+                        cellElement.style.opacity = '1';
+                    } else { // !isFlippedCommon && gameState.hasMadeMoveInTurn (내 턴에 이미 하나 클릭했고, 아직 공통으로 뒤집히지 않은 다른 셀)
+                        cellElement.style.pointerEvents = 'none';
+                        cellElement.style.opacity = '0.5';
                     }
-                } else { // 내 턴이 아니면, 공통으로 뒤집힌 셀 외에는 클릭 불가
+                } else { // 내 턴이 아닐 때
                     if (isFlippedCommon) {
-                        cellElement.style.pointerEvents = 'auto'; // 다른 사람이 뒤집은 셀은 나도 상태 변경 가능
+                        // 다른 플레이어가 뒤집은 셀 -> 나도 내 개인 빙고판 상태 변경 가능
+                        cellElement.style.pointerEvents = 'auto';
                         cellElement.style.opacity = '1';
                     } else {
+                        // 아직 공통으로 뒤집히지 않은 셀 -> 클릭 불가
                         cellElement.style.pointerEvents = 'none';
                         cellElement.style.opacity = '0.5';
                     }
@@ -1478,7 +1487,7 @@
             document.getElementById('game-area').style.display = 'none';
             
             if (gameState.roomRef) {
-                gameState.roomRef.off();
+                gameState.roomRef.off(); // 방을 떠날 때 Firebase 리스너 해제
                 // 방장이 방을 나갈 때만 방 정보를 삭제
                 if (gameState.isHost) {
                     // 방장이 방을 나갈 때, 해당 방 데이터를 삭제하는 로직 추가
@@ -1551,6 +1560,9 @@
             document.getElementById('max-players').value = 2;
 
             document.getElementById('flipped-numbers-count').textContent = '0'; // 공통 미션 개수 초기화
+
+            // 'game-options-section'이 다시 보이도록 설정
+            document.getElementById('game-options-section').classList.remove('hidden');
         }
 
         // 6자리 랜덤 방 코드 생성
@@ -1708,18 +1720,17 @@
                             nextStateForMe = 'failed';
                         } else if (stateForMeInFirebase === 'failed') {
                             nextStateForMe = 'flipped'; // failed에서 다시 flipped로 (토글)
-                        } else { // unflipped 상태인데 이미 공통으로 뒤집혔다면
+                        } else { // unflipped 상태인데 이미 공통으로 뒤집혔다면 (자동 뒤집힘)
                             nextStateForMe = 'flipped';
                         }
-                    } else { // 공통으로 뒤집히지 않은 숫자 (내 턴에 내가 처음 뒤집는 경우)
-                        // 오직 'unflipped'에서 'flipped'로만 변경 가능 (공통 뒤집힘 로직에서 이미 처리)
-                        // 만약 'failed' 상태였다면, 'unflipped'로 되돌려야 함 (잘못 클릭한 경우)
-                        if (stateForMeInFirebase === 'failed') {
+                    } else { // 공통으로 뒤집히지 않은 숫자 (내 턴에 내가 처음 뒤집는 경우 또는 실패를 되돌리는 경우)
+                        if (stateForMeInFirebase === 'unflipped') {
+                            nextStateForMe = 'flipped'; // 내가 처음 뒤집는 경우
+                        } else if (stateForMeInFirebase === 'failed') {
                             nextStateForMe = 'unflipped'; // 잘못 클릭해서 실패 처리된 것을 되돌림
-                        } else {
-                            // 이 경우는 위 isFlippedCommon 조건에서 처리되므로 실제로는 여기까지 오지 않음
-                            // 혹시 모를 상황을 대비해 기본값 설정
-                            nextStateForMe = 'unflipped';
+                        } else { // flipped 상태인데 공통으로 뒤집히지 않은 경우 (오류 방지)
+                            // 이 경우는 발생해서는 안 됨.
+                            return undefined;
                         }
                     }
                     
@@ -1804,9 +1815,10 @@
             const nameInput = document.getElementById('player-name');
             const hintElement = document.getElementById('auto-join-hint');
             const mainActionButtons = document.getElementById('main-action-buttons');
+            const gameOptionsSection = document.getElementById('game-options-section'); // 추가: 게임 옵션 섹션
 
             // DOM 요소가 아직 준비되지 않았다면 재시도 (재귀 호출)
-            if (!joinSection || !roomCodeInput || !nameInput || !hintElement || !mainActionButtons) {
+            if (!joinSection || !roomCodeInput || !nameInput || !hintElement || !mainActionButtons || !gameOptionsSection) {
                 console.error('❌ 필요한 DOM 요소를 찾을 수 없음. 재시도합니다.');
                 setTimeout(() => performAutoJoin(roomCode), 100);
                 return;
@@ -1825,6 +1837,9 @@
             
             hintElement.classList.remove('hidden');
             
+            // 초대 링크로 들어온 경우, 게임 옵션 섹션 숨김
+            gameOptionsSection.classList.add('hidden');
+
             nameInput.focus();
 
             showMessage(`🎉 초대 링크로 접속했습니다! 방 코드: ${roomCode}\n닉네임을 입력하고 입장하세요!`, 'success');
