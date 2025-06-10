@@ -511,7 +511,7 @@
             <h1>🎯 밈주머니 빙고 게임!</h1>
             <p>밈주머니와 함께 즐기는 쐐기 빙고!</p>
             <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
-                v4.2 - 턴 종료 및 빙고 버튼 활성화 문제 최종 해결
+                v4.3 - 턴 종료 버튼 활성화 및 초대 링크 속도 개선
             </div>
         </div>
 
@@ -695,11 +695,12 @@
             roomRef: null, // 현재 연결된 방의 Firebase 레퍼런스
             missionMap: {}, // 숫자(1~9)와 미션 텍스트의 고정 매핑
             canClaimBingo: false, // 빙고 버튼 활성화 여부
-            flippedNumbers: [] // 모든 플레이어가 공통으로 뒤집은 숫자 목록 (Firebase에서 동기화)
+            flippedNumbers: [], // 모든 플레이어가 공통으로 뒤집은 숫자 목록 (Firebase에서 동기화)
+            hasMadeMoveInTurn: false // 현재 턴에 셀을 한 번이라도 클릭했는지 여부
         };
 
-        // 호스트 전용 비밀번호 (테스트용: 0804)
-        const HOST_PASSWORD = "0804"; 
+        // 호스트 전용 비밀번호 (테스트용: 051012)
+        const HOST_PASSWORD = "051012"; 
 
         // 상태 메시지 표시
         function showMessage(message, type = 'info') {
@@ -792,7 +793,7 @@
                             name: playerName,
                             isHost: true,
                             joinedAt: Date.now(),
-                            boardState: {} // 각 플레이어별 빙고판 상태를 여기에 저장
+                            boardState: {} 
                         }
                     },
                     missions: [],
@@ -1211,7 +1212,7 @@
             const currentPlayerName = gameState.playerList[gameState.currentTurn];
             const isMyTurn = currentPlayerName === gameState.playerName;
 
-            // 게임 시작 전이거나 방 레퍼런스가 없으면 버튼 숨김/비활성화
+            // 게임 시작 전이거나 방 레퍼런스가 없으면 버튼 비활성화 (보이기는 함)
             if (!gameState.gameStarted || !gameState.roomRef) {
                 gameState.canClaimBingo = false;
                 bingoButton.disabled = true;
@@ -1219,12 +1220,12 @@
                 return;
             }
 
-            // Firebase에서 최신 게임 상태 (gameEnded, winner)를 가져옴 (setupRoomListeners에서 이미 동기화되지만, 안전을 위해)
+            // Firebase에서 최신 게임 상태 (gameEnded, winner)를 가져옴
             gameState.roomRef.once('value').then(snapshot => {
                 const roomData = snapshot.val();
                 if (!roomData) return;
 
-                // 게임이 이미 종료되었거나 승자가 있다면 버튼 숨김/비활성화
+                // 게임이 이미 종료되었거나 승자가 있다면 버튼 비활성화
                 if (roomData.gameEnded || roomData.winner) {
                     bingoButton.disabled = true;
                     turnEndButton.disabled = true;
@@ -1281,14 +1282,25 @@
                 // --- 빙고 버튼 활성화/비활성화 로직 ---
                 if (completedLines >= requiredLines) {
                     gameState.canClaimBingo = true;
-                    bingoButton.disabled = !isMyTurn || roomData.gameEnded || roomData.winner; // 내 턴에만 활성화
+                    // 내 턴이고, 게임이 아직 종료되지 않았고, 승자가 없을 때만 빙고 버튼 활성화
+                    bingoButton.disabled = !isMyTurn || roomData.gameEnded || roomData.winner; 
                 } else {
                     gameState.canClaimBingo = false;
                     bingoButton.disabled = true;
                 }
 
                 // --- 턴 종료 버튼 활성화/비활성화 로직 ---
-                turnEndButton.disabled = !isMyTurn || roomData.gameEnded || roomData.winner; // 내 턴에만 활성화
+                // 내 턴이고, 게임이 아직 종료되지 않았으며, 승자가 없고, 현재 턴에 최소 한 번 셀을 클릭했다면 활성화
+                turnEndButton.disabled = !isMyTurn || roomData.gameEnded || roomData.winner || !gameState.hasMadeMoveInTurn;
+
+                // 게임 종료 시 버튼 숨김 (UI 리스너에서 이미 처리)
+                if (roomData.gameEnded || roomData.winner) {
+                    bingoButton.style.display = 'none';
+                    turnEndButton.style.display = 'none';
+                } else {
+                    bingoButton.style.display = 'block'; // 게임 중이면 보이게
+                    turnEndButton.style.display = 'block'; // 게임 중이면 보이게
+                }
 
             }).catch(error => {
                 console.error("Error checking bingo possibility:", error);
@@ -1314,6 +1326,11 @@
                 return;
             }
 
+            if (!gameState.hasMadeMoveInTurn) { // 셀을 클릭하지 않았으면 턴 종료 불가
+                showMessage('셀을 하나라도 뒤집어야 턴을 종료할 수 있습니다!', 'error');
+                return;
+            }
+
             try {
                 // 다음 턴으로 넘김
                 const nextTurn = (gameState.currentTurn + 1) % gameState.playerList.length;
@@ -1321,6 +1338,10 @@
                     currentTurn: nextTurn
                 });
                 showMessage('턴을 종료했습니다.', 'info');
+                gameState.hasMadeMoveInTurn = false; // 턴 종료 시 상태 초기화
+                // 턴 종료 시 버튼 비활성화 (새로운 턴 주인이 UI 업데이트 하면서 다시 활성화될 것)
+                document.getElementById('turn-end-button').disabled = true;
+                document.getElementById('bingo-button').disabled = true;
             } catch (error) {
                 showMessage('턴 종료에 실패했습니다: ' + error.message, 'error');
                 console.error('Turn End Error:', error);
@@ -1369,6 +1390,9 @@
                 } else {
                     showMessage('앗! 다른 플레이어가 먼저 빙고를 주장했습니다!', 'error');
                 }
+                document.getElementById('bingo-button').disabled = true; 
+                document.getElementById('bingo-button').style.display = 'none'; 
+                document.getElementById('turn-end-button').style.display = 'none'; 
             } catch (error) {
                 showMessage('빙고 주장 중 오류가 발생했습니다: ' + error.message, 'error');
                 console.error('Claim Bingo Error:', error);
@@ -1434,7 +1458,8 @@
                 roomRef: null,
                 missionMap: {}, 
                 canClaimBingo: false,
-                flippedNumbers: [] 
+                flippedNumbers: [],
+                hasMadeMoveInTurn: false 
             };
             
             // UI 요소들을 초기 상태로 재설정
@@ -1624,16 +1649,21 @@
                         nextStateForMe = 'unflipped';
                     }
                     
-                    // 선택된 숫자와 미션은 변함 없음
                     return {
                         state: nextStateForMe,
-                        mission: missionToAssign,
+                        mission: missionToAssign, // 공통 미션 맵의 미션 사용
                         changedAt: firebase.database.ServerValue.TIMESTAMP
                     };
                 });
 
                 if (boardStateResult.committed) {
-                    // 자신의 빙고판 상태 업데이트 성공. 턴은 '턴 종료' 버튼으로만 넘어감.
+                    // 자신의 빙고판 상태 업데이트 성공.
+                    // 현재 턴 플레이어가 셀을 클릭했다면 hasMadeMoveInTurn을 true로 설정하여 턴 종료 버튼을 활성화
+                    if (isMyTurn) {
+                        gameState.hasMadeMoveInTurn = true;
+                        // 즉시 버튼 상태 업데이트 호출
+                        checkBingoPossibility(); 
+                    }
                 } else {
                     showMessage('내 빙고판 칸 상태 변경 중 오류가 발생했습니다. 다시 시도해주세요!', 'error');
                 }
@@ -1675,7 +1705,7 @@
             }
         }
 
-        // URL 파라미터 확인 및 자동 입장 로직 시작
+        // URL 파라미터 확인 및 자동 입장 로직 시작 (HTML 파싱 직후 즉시 실행 시도)
         function checkURLParams() {
             const urlParams = new URLSearchParams(window.location.search);
             const roomCode = urlParams.get('room');
@@ -1685,9 +1715,9 @@
                 console.log('🎯 URL에서 방 코드 발견:', upperRoomCode);
                 
                 // DOM이 완전히 로드된 후 performAutoJoin을 호출하도록 예약
-                // 100ms 지연을 주어 DOM 렌더링이 충분히 진행된 후 UI 조작 시도
+                // 0ms 지연으로 가능한 한 빨리 실행 (DOM 준비는 performAutoJoin 내에서 재귀적으로 확인)
                 document.addEventListener('DOMContentLoaded', () => {
-                    setTimeout(() => performAutoJoin(upperRoomCode), 100);
+                    setTimeout(() => performAutoJoin(upperRoomCode), 0);
                 });
                 return true;
             } else {
@@ -1753,7 +1783,6 @@
         }
 
         // --- 일반 이벤트 리스너 설정 (DOMContentLoaded 내에서 호출) ---
-        // 이 부분은 DOM이 완전히 로드된 후에만 실행되도록 보장합니다.
         document.addEventListener('DOMContentLoaded', () => {
             // 미션 입력 필드 엔터 키로 미션 추가
             document.getElementById('mission-input').addEventListener('keypress', function(e) {
@@ -1786,7 +1815,6 @@
         });
 
         // URL 파라미터 확인 및 자동 입장 로직 시작 (HTML 파싱 직후 즉시 실행 시도)
-        // DOMContentLoaded 이벤트 내에서 호출하지 않고, 스크립트 로드 시점에 직접 호출
         checkURLParams();
     </script>
 </body>
