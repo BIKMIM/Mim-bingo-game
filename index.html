@@ -319,7 +319,7 @@
             cursor: pointer;
             transition: background-color 0.3s ease, transform 0.1s ease;
             margin-top: 20px;
-            display: block; /* 항상 블록으로 표시 */
+            display: block; /* 항상 보이도록 설정 */
             width: 100%; 
             max-width: 300px; 
             box-sizing: border-box; 
@@ -511,7 +511,7 @@
             <h1>🎯 밈주머니 빙고 게임!</h1>
             <p>밈주머니와 함께 즐기는 쐐기 빙고!</p>
             <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
-                v4.1 - 셀 3단계 상태 및 버튼 동작 최종 수정
+                v4.2 - 턴 종료 및 빙고 버튼 활성화 문제 최종 해결
             </div>
         </div>
 
@@ -698,8 +698,8 @@
             flippedNumbers: [] // 모든 플레이어가 공통으로 뒤집은 숫자 목록 (Firebase에서 동기화)
         };
 
-        // 호스트 전용 비밀번호 (테스트용: 051012)
-        const HOST_PASSWORD = "051012"; 
+        // 호스트 전용 비밀번호 (테스트용: 0804)
+        const HOST_PASSWORD = "0804"; 
 
         // 상태 메시지 표시
         function showMessage(message, type = 'info') {
@@ -933,7 +933,7 @@
                          // 게임 시작 후 자신의 빙고판이 없거나 크기가 다를 경우 생성 시도
                          const totalCells = gameState.boardSize * gameState.boardSize;
                          if (gameState.bingoBoard.length !== totalCells || document.getElementById('bingo-board').children.length !== totalCells) {
-                             if (Object.keys(gameState.missionMap).length === totalCells) {
+                             if (Object.keys(gameState.missionMap).length === totalCells) { 
                                 generateBingoBoard();
                              }
                          }
@@ -947,11 +947,10 @@
                     if (gameState.players[gameState.playerName] && gameState.players[gameState.playerName].boardState) {
                         syncBingoBoard(gameState.players[gameState.playerName].boardState); 
                     } else {
-                        // 플레이어 데이터가 아직 로드되지 않았거나 boardState가 없으면 빈 상태로 동기화 시도
-                        syncBingoBoard({}); 
+                        syncBingoBoard({}); // 자신의 boardState가 없다면 빈 상태로
                     }
                     
-                    checkBingoPossibility(); // 빙고 버튼 활성화/비활성화
+                    checkBingoPossibility(); // 빙고 버튼, 턴 종료 버튼 활성화/비활성화
                     updateBingoCellClickability(); // 셀 클릭 가능 여부 업데이트
                     
                     // 방장 전용 UI 업데이트 (선공 선택)
@@ -965,22 +964,14 @@
                     if (roomData.winner) {
                         displayWinnerMessage(roomData.winner, roomData.winCondition);
                         document.getElementById('bingo-button').disabled = true;
-                        document.getElementById('bingo-button').style.display = 'none'; 
-                        document.getElementById('turn-end-button').style.display = 'none'; 
+                        document.getElementById('bingo-button').style.display = 'block'; // 버튼 보이지만 비활성화
+                        document.getElementById('turn-end-button').style.display = 'block'; // 버튼 보이지만 비활성화
                     } else {
                         const winnerOverlay = document.getElementById('winner-overlay');
                         if (winnerOverlay) winnerOverlay.remove();
                     }
                 }
             });
-
-            // 공통으로 뒤집힌 숫자 리스너 (선택된 숫자 표시용)
-            // (이미 메인 on('value') 리스너에서 처리되므로, 중복을 피하기 위해 제거하거나 다른 용도로 변경)
-            // gameState.roomRef.child('flippedNumbers').on('value', (snapshot) => {
-            //     gameState.flippedNumbers = Object.keys(snapshot.val() || {}).map(Number);
-            //     document.getElementById('flipped-numbers-count').textContent = gameState.flippedNumbers.length;
-            //     updateBingoCellClickability(); 
-            // });
         }
 
         // 미션 추가
@@ -1079,10 +1070,10 @@
 
                 // 모든 플레이어의 boardState 초기화 (Firebase 데이터 삭제 후 다시 생성)
                 const updates = {};
-                for (const player in gameState.players) { // players 객체 순회
-                    updates[`players/${player}/boardState`] = {}; // 각 플레이어의 boardState를 빈 객체로 설정
+                for (const player in gameState.players) { 
+                    updates[`players/${player}/boardState`] = {}; 
                 }
-                await gameState.roomRef.update(updates); // 모든 플레이어의 boardState를 일괄 업데이트
+                await gameState.roomRef.update(updates); 
                 
             } catch (error) {
                 showMessage('게임 시작에 실패했습니다: ' + error.message, 'error');
@@ -1150,20 +1141,17 @@
             const cells = bingoBoardElement.querySelectorAll('.bingo-cell');
             let markedCellsCount = 0; 
 
-            // 자신의 boardStateData를 바탕으로 로컬 빙고판 상태 및 UI 업데이트
             for (let i = 0; i < totalCells; i++) {
                 const cellInBoardState = gameState.bingoBoard[i]; 
-                const cellDataForMe = myBoardStateData[cellInBoardState.number]; // 나만의 boardState에서 해당 숫자 데이터
+                const cellDataForMe = myBoardStateData[cellInBoardState.number]; 
 
-                // 로컬 상태를 Firebase (나의 개별) 최신 상태로 업데이트
                 if (cellDataForMe) {
                     cellInBoardState.state = cellDataForMe.state;
                     cellInBoardState.mission = cellDataForMe.mission; 
                 } else {
-                    cellInBoardState.state = 'unflipped'; // Firebase에 없으면 unflipped로 간주
+                    cellInBoardState.state = 'unflipped'; 
                 }
 
-                // UI 업데이트
                 const cellElement = cells[i]; 
                 cellElement.classList.remove('flipped', 'failed');
                 
@@ -1184,20 +1172,15 @@
         }
 
         // 공통으로 뒤집힌 숫자 목록에 따라 빙고 셀의 클릭 가능 여부 업데이트
-        // (이 함수는 setupRoomListeners의 on('value')와 flippedNumbers 리스너에서 호출됨)
+        // (이 함수는 setupRoomListeners의 on('value')에서 호출됨)
         function updateBingoCellClickability() {
             const cells = document.querySelectorAll('.bingo-cell');
             cells.forEach((cellElement, index) => {
                 const cellNumber = gameState.bingoBoard[index].number;
                 const isFlippedCommon = gameState.flippedNumbers.includes(cellNumber); // 이 숫자가 공통으로 뒤집혔는지
                 const isMyTurn = gameState.playerList[gameState.currentTurn] === gameState.playerName;
-                const isGameEnded = gameState.gameStarted && gameState.roomRef && (gameState.roomRef.winner || gameState.roomRef.gameEnded); 
-
-                if (isGameEnded) { 
-                    cellElement.style.pointerEvents = 'none';
-                    cellElement.style.opacity = '1'; 
-                    return;
-                }
+                
+                // 게임 종료 여부는 checkBingoPossibility에서 최종적으로 판단하므로, 여기서는 단순히 UI만 업데이트
 
                 if (isFlippedCommon) {
                     // 공통으로 뒤집힌 숫자는 누구나 자신의 상태를 변경 가능
@@ -1228,24 +1211,22 @@
             const currentPlayerName = gameState.playerList[gameState.currentTurn];
             const isMyTurn = currentPlayerName === gameState.playerName;
 
-            if (board.length === 0 || !gameState.gameStarted || gameState.roomRef === null) {
+            // 게임 시작 전이거나 방 레퍼런스가 없으면 버튼 숨김/비활성화
+            if (!gameState.gameStarted || !gameState.roomRef) {
                 gameState.canClaimBingo = false;
-                bingoButton.style.display = 'block'; // 버튼은 항상 보이게
                 bingoButton.disabled = true;
-                turnEndButton.style.display = 'block'; // 버튼은 항상 보이게
                 turnEndButton.disabled = true;
                 return;
             }
 
-            // Firebase에서 최신 게임 상태 (gameEnded, winner, bingoClaimed)를 가져옴
+            // Firebase에서 최신 게임 상태 (gameEnded, winner)를 가져옴 (setupRoomListeners에서 이미 동기화되지만, 안전을 위해)
             gameState.roomRef.once('value').then(snapshot => {
                 const roomData = snapshot.val();
                 if (!roomData) return;
 
+                // 게임이 이미 종료되었거나 승자가 있다면 버튼 숨김/비활성화
                 if (roomData.gameEnded || roomData.winner) {
-                    bingoButton.style.display = 'none'; // 게임 종료시 숨김
                     bingoButton.disabled = true;
-                    turnEndButton.style.display = 'none'; // 게임 종료시 숨김
                     turnEndButton.disabled = true;
                     return;
                 }
@@ -1297,36 +1278,22 @@
                 
                 console.log(`${gameState.playerName}: 현재 완성된 라인 수 (실패 제외) = ${completedLines}`);
 
-                // --- 빙고 버튼 표시/활성화 로직 ---
+                // --- 빙고 버튼 활성화/비활성화 로직 ---
                 if (completedLines >= requiredLines) {
                     gameState.canClaimBingo = true;
-                    bingoButton.style.display = 'block'; 
-                    if (isMyTurn && !roomData.gameEnded && !roomData.winner) {
-                        bingoButton.disabled = false;
-                    } else {
-                        bingoButton.disabled = true;
-                    }
+                    bingoButton.disabled = !isMyTurn || roomData.gameEnded || roomData.winner; // 내 턴에만 활성화
                 } else {
                     gameState.canClaimBingo = false;
-                    bingoButton.style.display = 'none'; 
                     bingoButton.disabled = true;
                 }
 
                 // --- 턴 종료 버튼 활성화/비활성화 로직 ---
-                if (isMyTurn && !roomData.gameEnded && !roomData.winner) {
-                    turnEndButton.style.display = 'block'; 
-                    turnEndButton.disabled = false;
-                } else {
-                    turnEndButton.style.display = 'none'; 
-                    turnEndButton.disabled = true;
-                }
+                turnEndButton.disabled = !isMyTurn || roomData.gameEnded || roomData.winner; // 내 턴에만 활성화
 
             }).catch(error => {
                 console.error("Error checking bingo possibility:", error);
                 showMessage("빙고/턴 상태 확인 중 오류 발생!", "error");
-                bingoButton.style.display = 'none';
                 bingoButton.disabled = true;
-                turnEndButton.style.display = 'none';
                 turnEndButton.disabled = true;
             });
         }
@@ -1354,9 +1321,6 @@
                     currentTurn: nextTurn
                 });
                 showMessage('턴을 종료했습니다.', 'info');
-                // 턴 종료 시 버튼 비활성화 (새로운 턴 주인이 UI 업데이트 하면서 다시 활성화될 것)
-                document.getElementById('turn-end-button').disabled = true;
-                document.getElementById('bingo-button').disabled = true;
             } catch (error) {
                 showMessage('턴 종료에 실패했습니다: ' + error.message, 'error');
                 console.error('Turn End Error:', error);
@@ -1405,9 +1369,6 @@
                 } else {
                     showMessage('앗! 다른 플레이어가 먼저 빙고를 주장했습니다!', 'error');
                 }
-                document.getElementById('bingo-button').disabled = true; 
-                document.getElementById('bingo-button').style.display = 'none'; 
-                document.getElementById('turn-end-button').style.display = 'none'; 
             } catch (error) {
                 showMessage('빙고 주장 중 오류가 발생했습니다: ' + error.message, 'error');
                 console.error('Claim Bingo Error:', error);
@@ -1494,9 +1455,9 @@
             document.getElementById('first-player-section').classList.add('hidden');
             document.getElementById('player-name').value = '';
             document.getElementById('room-code').value = '';
-            document.getElementById('bingo-button').style.display = 'none'; // 초기화 시 버튼 숨김
+            document.getElementById('bingo-button').style.display = 'block'; // 버튼은 항상 보이게
             document.getElementById('bingo-button').disabled = true; 
-            document.getElementById('turn-end-button').style.display = 'none'; // 초기화 시 버튼 숨김
+            document.getElementById('turn-end-button').style.display = 'block'; // 버튼은 항상 보이게
             document.getElementById('turn-end-button').disabled = true; 
             
             // 승리 오버레이 제거 (혹시 이전 게임에서 남아있을 경우)
@@ -1612,7 +1573,6 @@
 
         // 셀 뒤집기 (3단계 상태 변경: unflipped -> flipped -> failed -> unflipped)
         async function flipCell(index) {
-            // Firebase에서 최신 roomData 스냅샷을 가져와서 게임 종료 여부 확인
             const roomSnapshot = await gameState.roomRef.once('value');
             const roomData = roomSnapshot.val();
             
@@ -1650,11 +1610,12 @@
                 // 2단계: 개별 플레이어의 빙고판 상태를 변경 (공통으로 뒤집힌 숫자라면 누구나 가능)
                 const myBoardStateRef = gameState.roomRef.child(`players/${gameState.playerName}/boardState/${selectedNumber}`);
                 
+                // 트랜잭션을 사용하여 Firebase의 현재 상태를 기반으로 다음 상태를 결정
                 const boardStateResult = await myBoardStateRef.transaction((currentMyStateData) => {
                     let stateForMeInFirebase = currentMyStateData ? currentMyStateData.state : 'unflipped';
                     let nextStateForMe;
 
-                    // 현재 Firebase에 저장된 자신의 상태를 기준으로 다음 상태 결정
+                    // Firebase에 저장된 자신의 현재 상태를 기준으로 다음 상태 결정
                     if (stateForMeInFirebase === 'unflipped') {
                         nextStateForMe = 'flipped';
                     } else if (stateForMeInFirebase === 'flipped') {
@@ -1663,9 +1624,10 @@
                         nextStateForMe = 'unflipped';
                     }
                     
+                    // 선택된 숫자와 미션은 변함 없음
                     return {
                         state: nextStateForMe,
-                        mission: missionToAssign, // 공통 미션 맵의 미션 사용
+                        mission: missionToAssign,
                         changedAt: firebase.database.ServerValue.TIMESTAMP
                     };
                 });
@@ -1742,7 +1704,7 @@
             const roomCodeInput = document.getElementById('room-code');
             const nameInput = document.getElementById('player-name');
             const hintElement = document.getElementById('auto-join-hint');
-            const mainActionButtons = document.getElementById('main-action-buttons'); // 버튼 그룹 ID 사용
+            const mainActionButtons = document.getElementById('main-action-buttons'); 
 
             // DOM 요소가 아직 준비되지 않았다면 재시도 (재귀 호출)
             if (!joinSection || !roomCodeInput || !nameInput || !hintElement || !mainActionButtons) {
@@ -1824,6 +1786,7 @@
         });
 
         // URL 파라미터 확인 및 자동 입장 로직 시작 (HTML 파싱 직후 즉시 실행 시도)
+        // DOMContentLoaded 이벤트 내에서 호출하지 않고, 스크립트 로드 시점에 직접 호출
         checkURLParams();
     </script>
 </body>
