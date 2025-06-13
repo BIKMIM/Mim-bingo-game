@@ -567,11 +567,12 @@
                     <input type="text" class="mission-input" id="mission-input" placeholder="미션 내용을 입력하세요" maxlength="20">
                     <button class="btn btn-primary" onclick="addMission()">추가</button>
                 </div>
-                <div class="missions-list" id="missions-list">
-                    <div style="text-align: center; color: #a0aec0; padding: 20px;">
-                        미션을 추가해주세요 (최소 9개 필요)
-                    </div>
+                <div class="button-group" style="margin-bottom: 15px;">
+                    <button class="btn btn-secondary" onclick="saveMissions()">미션 저장</button>
+                    <button class="btn btn-secondary" onclick="loadMissions()">미션 불러오기 (기본값)</button>
                 </div>
+                <div class="missions-list" id="missions-list">
+                    </div>
                 <div id="current-mission-count" style="text-align: center; margin-top: 10px; font-size: 14px; color: #718096;">
                     현재 등록된 미션: 0개
                 </div>
@@ -603,7 +604,7 @@
                         </div>
                     </div>
                 </div>
-                 <div class="input-group">
+                <div class="input-group">
                     <label for="max-players"><strong>최대 플레이어 수:</strong></label>
                     <select id="max-players">
                         <option value="2">2명</option>
@@ -677,6 +678,19 @@
         // Firebase 초기화
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
+
+        // 기본 미션 목록 (localStorage에 저장된 미션이 없을 경우 사용)
+        const defaultMissions = [
+            "치트키 쓰려고 했지만 실패한 미션",
+            "알 수 없습니다 멘트 대신 추측성 발언한 미션",
+            "아무튼 해줘",
+            "모호한 답변에 대해 추가 정보 요청한 미션",
+            "근거 제시를 놓친 미션",
+            "친절한 어조로 질문에 답한 미션",
+            "내부 지침을 어겨서 답변을 잘라먹은 미션",
+            "뜬금없는 농담 미션",
+            "공손하지만 단호한 답변 미션"
+        ];
 
         // 게임 상태 변수들
         let gameState = {
@@ -796,7 +810,7 @@
                             boardState: {}
                         }
                     },
-                    missions: [],
+                    missions: gameState.missions, // 방 생성 시 현재 로드된 미션 목록으로 초기화
                     gameStarted: false,
                     winCondition: 1,
                     boardSize: gameState.boardSize, // 3으로 고정
@@ -921,8 +935,11 @@
                     }
                     updatePlayersDisplay();
                     
-                    // 미션 목록 업데이트
-                    gameState.missions = roomData.missions || [];
+                    // 미션 목록 업데이트 (방장이 아니면 Firebase 미션 목록 동기화)
+                    // 미션 저장/불러오기 기능을 추가했기 때문에 방장이 아니면 Firebase에서 미션을 받아옴
+                    if (!gameState.isHost && roomData.missions) {
+                        gameState.missions = roomData.missions;
+                    }
                     updateMissionsDisplay();
 
                     // UI 화면 전환 (게임 시작 여부에 따라)
@@ -936,7 +953,7 @@
                         const totalCells = gameState.boardSize * gameState.boardSize;
                         if (gameState.bingoBoard.length !== totalCells || document.getElementById('bingo-board').children.length !== totalCells) {
                              if (Object.keys(gameState.missionMap).length === totalCells) {
-                                generateBingoBoard();
+                                 generateBingoBoard();
                              }
                         }
                     } else {
@@ -1001,7 +1018,14 @@
             
             try {
                 const newMissions = [...gameState.missions, mission];
-                await gameState.roomRef.child('missions').set(newMissions);
+                gameState.missions = newMissions; // 로컬 gameState 업데이트
+                updateMissionsDisplay(); // UI 즉시 업데이트
+                
+                // 호스트만 Firebase에 미션 업데이트
+                if (gameState.isHost) {
+                    await gameState.roomRef.child('missions').set(newMissions);
+                }
+                
                 missionInput.value = '';
                 
             } catch (error) {
@@ -1013,12 +1037,50 @@
         async function deleteMission(index) {
             try {
                 const newMissions = gameState.missions.filter((_, i) => i !== index);
-                await gameState.roomRef.child('missions').set(newMissions);
+                gameState.missions = newMissions; // 로컬 gameState 업데이트
+                updateMissionsDisplay(); // UI 즉시 업데이트
+
+                // 호스트만 Firebase에 미션 업데이트
+                if (gameState.isHost) {
+                    await gameState.roomRef.child('missions').set(newMissions);
+                }
                 
             } catch (error) {
                 showMessage('미션 삭제에 실패했습니다: ' + error.message, 'error');
             }
         }
+
+        // 미션 저장 함수 (localStorage)
+        function saveMissions() {
+            try {
+                localStorage.setItem('savedBingoMissions', JSON.stringify(gameState.missions));
+                showMessage('현재 미션 목록이 저장되었습니다!', 'success');
+            } catch (e) {
+                showMessage('미션 저장에 실패했습니다. 브라우저 저장 공간이 부족할 수 있습니다.', 'error');
+                console.error("Failed to save missions to localStorage:", e);
+            }
+        }
+
+        // 미션 불러오기 함수 (localStorage 또는 기본값)
+        function loadMissions() {
+            try {
+                const savedMissions = localStorage.getItem('savedBingoMissions');
+                if (savedMissions) {
+                    gameState.missions = JSON.parse(savedMissions);
+                    showMessage('저장된 미션 목록을 불러왔습니다!', 'success');
+                } else {
+                    gameState.missions = [...defaultMissions]; // 기본 미션 사용
+                    showMessage('저장된 미션이 없습니다. 기본 미션 목록을 불러왔습니다.', 'info');
+                }
+                updateMissionsDisplay(); // 미션 UI 업데이트
+            } catch (e) {
+                showMessage('미션 불러오기에 실패했습니다.', 'error');
+                console.error("Failed to load missions from localStorage:", e);
+                gameState.missions = [...defaultMissions]; // 오류 시 기본 미션 사용
+                updateMissionsDisplay();
+            }
+        }
+
 
         // 게임 시작
         async function startGame() {
@@ -1111,7 +1173,7 @@
             });
             // Firebase에 현재 턴이 이미 설정되어 있다면 해당 플레이어 선택
             if (gameState.currentTurn !== null && gameState.playerList[gameState.currentTurn]) {
-                 firstPlayerSelect.value = gameState.playerList[gameState.currentTurn];
+                firstPlayerSelect.value = gameState.playerList[gameState.currentTurn];
             }
         }
 
@@ -1149,8 +1211,8 @@
                 }
             }
             
-            const bingoBoardElement = document.getElementById('bingo-board');
             // DOM에 빙고 셀이 아직 없으면 기다림
+            const bingoBoardElement = document.getElementById('bingo-board');
             if (bingoBoardElement.children.length === 0 || bingoBoardElement.children.length !== totalCells) {
                 console.warn("syncBingoBoard: Waiting for bingo board DOM to be generated...");
                 setTimeout(() => syncBingoBoard(myBoardStateData), 50);
@@ -1285,8 +1347,8 @@
                     turnEndButton.style.display = 'none';
                     return;
                 } else {
-                     bingoButton.style.display = 'block';
-                     turnEndButton.style.display = 'block';
+                    bingoButton.style.display = 'block';
+                    turnEndButton.style.display = 'block';
                 }
 
                 // 빙고 라인 체크 ('flipped' 상태만 인정)
@@ -1413,30 +1475,30 @@
             }
             
             if (roomData.bingoClaimed) {
-                 showMessage('다른 플레이어가 이미 빙고를 주장했습니다!', 'error');
-                 return;
+                showMessage('다른 플레이어가 이미 빙고를 주장했습니다!', 'error');
+                return;
             }
 
             try {
                 const result = await gameState.roomRef.child('bingoClaimed').transaction((currentClaim) => {
-                    if (currentClaim === null) {
+                    if (currentClaim === null) { // 아직 빙고를 주장한 사람이 없다면
                         return {
                             claimer: gameState.playerName,
                             timestamp: firebase.database.ServerValue.TIMESTAMP
                         };
                     } else {
-                        return undefined;
+                        return undefined; // 이미 주장한 사람이 있다면 트랜잭션 취소
                     }
                 });
 
-                if (result.committed) {
+                if (result.committed) { // 트랜잭션 성공 (내가 빙고 주장 선점 성공)
                     await gameState.roomRef.update({
                         winner: gameState.playerName,
                         gameEnded: true,
                         endedAt: firebase.database.ServerValue.TIMESTAMP
                     });
                     showMessage('🎉 빙고를 주장했습니다! 당신이 승리합니다!', 'success');
-                } else {
+                } else { // 트랜잭션 실패 (다른 사람이 먼저 주장함)
                     showMessage('앗! 다른 플레이어가 먼저 빙고를 주장했습니다!', 'error');
                 }
                 document.getElementById('bingo-button').disabled = true;
@@ -1510,7 +1572,7 @@
                 roomCode: '',
                 playerName: '',
                 players: {},
-                missions: [],
+                missions: [], // 초기화 시 빈 배열로, 이후 loadMissions에서 채워짐
                 winCondition: 1,
                 boardSize: 3,
                 maxPlayers: 2,
@@ -1563,6 +1625,9 @@
 
             // 'game-options-section'이 다시 보이도록 설정
             document.getElementById('game-options-section').classList.remove('hidden');
+
+            // 설정 화면으로 돌아올 때 저장된 미션을 자동으로 불러옴
+            loadMissions();
         }
 
         // 6자리 랜덤 방 코드 생성
@@ -1888,7 +1953,9 @@
                     updateMissionsDisplay();
                 });
             });
-            // checkURLParams() 호출은 DOMContentLoaded 밖에서 이미 호출됨
+
+            // 페이지 로드 시 저장된 미션 불러오기
+            loadMissions();
         });
 
         // 페이지 이탈 시 Firebase 리스너 정리 및 플레이어 정보 삭제
