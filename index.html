@@ -503,6 +503,25 @@
                 padding: 20px;
             }
         }
+
+        /* 새로운 flex 컨테이너를 위한 스타일 */
+        .create-room-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end; /* 버튼과 드롭다운이 바닥선에 정렬되도록 */
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .create-room-controls .input-group {
+            margin-bottom: 0; /* 이 그룹 내부의 input-group은 마진 제거 */
+        }
+
+        /* max-players select box의 너비를 조정하여 버튼과 잘 어울리게 */
+        .create-room-controls #max-players-create {
+            width: auto; /* 자동 너비 */
+            min-width: 100px; /* 최소 너비 설정 */
+        }
     </style>
 </head>
 <body>
@@ -511,7 +530,7 @@
             <h1>🎯 밈주머니 빙고 게임!</h1>
             <p>밈주머니와 함께 즐기는 쐐기 빙고!</p>
             <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
-                v4.5 - 선공후공 버그 수정/ 초대받은 사람 UI 변경
+                v4.6 - 기본 미션 세이브/로드 기능 추가
             </div>
         </div>
 
@@ -523,7 +542,27 @@
                     <input type="text" id="player-name" placeholder="당신의 닉네임을 입력하세요" maxlength="10">
                 </div>
                 
-                <div class="button-group" id="main-action-buttons"> <button class="btn btn-primary" id="create-room-btn" onclick="createRoom()">새 방 만들기</button>
+                <div class="create-room-controls">
+                    <div class="input-group" style="flex-grow: 1;">
+                        <label for="max-players-create">최대 플레이어 수:</label>
+                        <select id="max-players-create">
+                            <option value="2">2명</option>
+                            <option value="3">3명</option>
+                            <option value="4">4명</option>
+                            <option value="5">5명</option>
+                            <option value="6">6명</option>
+                            <option value="7">7명</option>
+                            <option value="8">8명</option>
+                            <option value="9">9명</option>
+                            <option value="10">10명</option>
+                            <option value="11">11명</option>
+                            <option value="12">12명</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" id="create-room-btn" onclick="createRoom()">새 방 만들기</button>
+                </div>
+
+                <div class="button-group" id="main-action-buttons" style="margin-top: 15px;">
                     <button class="btn btn-secondary" id="show-join-room-btn" onclick="showJoinRoom()">방 입장하기</button>
                 </div>
 
@@ -603,22 +642,6 @@
                             <label for="win-3">3줄 빙고</label>
                         </div>
                     </div>
-                </div>
-                <div class="input-group">
-                    <label for="max-players"><strong>최대 플레이어 수:</strong></label>
-                    <select id="max-players">
-                        <option value="2">2명</option>
-                        <option value="3">3명</option>
-                        <option value="4">4명</option>
-                        <option value="5">5명</option>
-                        <option value="6">6명</option>
-                        <option value="7">7명</option>
-                        <option value="8">8명</option>
-                        <option value="9">9명</option>
-                        <option value="10">10명</option>
-                        <option value="11">11명</option>
-                        <option value="12">12명</option>
-                    </select>
                 </div>
                 
                 <div id="first-player-section" class="hidden" style="margin-top: 20px;">
@@ -796,7 +819,8 @@
                 gameState.isHost = true;
                 gameState.playerName = playerName;
                 gameState.roomCode = generateRoomCode();
-                gameState.maxPlayers = parseInt(document.getElementById('max-players').value);
+                // 새로운 드롭다운에서 최대 플레이어 수 가져옴
+                gameState.maxPlayers = parseInt(document.getElementById('max-players-create').value);
                 
                 gameState.roomRef = database.ref('rooms/' + gameState.roomCode);
                 
@@ -840,6 +864,10 @@
         // 방 입장 UI 표시
         function showJoinRoom() {
             document.getElementById('join-room-section').classList.remove('hidden');
+            // '새 방 만들기' 버튼 그룹을 숨김
+            document.getElementById('main-action-buttons').classList.add('hidden');
+            document.querySelector('.create-room-controls').classList.add('hidden'); // 추가
+            document.getElementById('show-join-room-btn').classList.add('hidden'); // 추가
         }
 
         // 방 입장 (초대 링크 자동 입장을 위해 prefilledRoomCode 인자 사용)
@@ -1124,8 +1152,9 @@
             try {
                 const winCondition = document.querySelector('input[name="win-condition"]:checked').value;
                 const selectedBoardSize = 3;
-                const selectedMaxPlayers = parseInt(document.getElementById('max-players').value);
-
+                // 게임 시작 시에는 기존의 게임 옵션 섹션의 max-players 드롭다운을 사용
+                const selectedMaxPlayers = parseInt(document.getElementById('max-players-create').value); // 이 부분도 변경
+                
                 await gameState.roomRef.update({
                     gameStarted: true,
                     winCondition: parseInt(winCondition),
@@ -1600,6 +1629,9 @@
             mainActionButtons.classList.remove('hidden');
             document.getElementById('create-room-btn').style.display = 'inline-block';
             document.getElementById('show-join-room-btn').style.display = 'inline-block';
+            document.querySelector('.create-room-controls').classList.remove('hidden'); // 추가
+            document.getElementById('show-join-room-btn').classList.remove('hidden'); // 추가
+
             document.getElementById('room-code').readOnly = false; // 방 코드 수정 가능하게
             
             document.getElementById('first-player-section').classList.add('hidden');
@@ -1619,7 +1651,7 @@
             // 빙고판 크기, 승리 조건, 최대 플레이어 수 UI를 기본값으로 재설정
             document.getElementById('size-3').checked = true;
             document.getElementById('win-1').checked = true;
-            document.getElementById('max-players').value = 2;
+            document.getElementById('max-players-create').value = 2; // 새로 추가된 드롭다운 초기화
 
             document.getElementById('flipped-numbers-count').textContent = '0'; // 공통 미션 개수 초기화
 
@@ -1880,10 +1912,12 @@
             const nameInput = document.getElementById('player-name');
             const hintElement = document.getElementById('auto-join-hint');
             const mainActionButtons = document.getElementById('main-action-buttons');
+            const createRoomControls = document.querySelector('.create-room-controls'); // 추가: 방 만들기 컨트롤 그룹
+            const showJoinRoomBtn = document.getElementById('show-join-room-btn'); // 추가: 방 입장하기 버튼
             const gameOptionsSection = document.getElementById('game-options-section'); // 추가: 게임 옵션 섹션
 
             // DOM 요소가 아직 준비되지 않았다면 재시도 (재귀 호출)
-            if (!joinSection || !roomCodeInput || !nameInput || !hintElement || !mainActionButtons || !gameOptionsSection) {
+            if (!joinSection || !roomCodeInput || !nameInput || !hintElement || !mainActionButtons || !gameOptionsSection || !createRoomControls || !showJoinRoomBtn) {
                 console.error('❌ 필요한 DOM 요소를 찾을 수 없음. 재시도합니다.');
                 setTimeout(() => performAutoJoin(roomCode), 100);
                 return;
@@ -1891,8 +1925,10 @@
             
             console.log('✅ DOM 요소 모두 준비됨');
             
-            // '새 방 만들기'와 '방 입장하기' 버튼 그룹 숨기기
+            // '새 방 만들기' 관련 UI 숨기기
             mainActionButtons.classList.add('hidden');
+            createRoomControls.classList.add('hidden'); // 추가
+            showJoinRoomBtn.classList.add('hidden'); // 추가
             
             // "방 입장" 섹션만 보이게 하기
             joinSection.classList.remove('hidden');
