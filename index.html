@@ -531,9 +531,9 @@
             flex-shrink: 0; /* 줄어들지 않도록 */
         }
 
-        /* 방 입장하기 버튼 숨김을 위한 클래스 추가 */
-        #show-join-room-btn.hidden-by-url-param {
-            display: none;
+        /* 방 입장하기 버튼 숨김을 위한 클래스 추가 (초대링크 시) */
+        .hidden-by-url-param {
+            display: none !important; /* 우선순위 높임 */
         }
 
         /* 최대 플레이어 수 드롭다운의 label과 select가 가로로 나란히 오도록 */
@@ -692,7 +692,7 @@
 
         <div id="game-area" class="game-area">
             <div class="game-status">
-                <div class="status-text">방 코드: <span class="room-code-display" id="current-room-code">ABC123</span></div>
+                <div class="status-text">방 코드: <span class="room-code-display" id="current-room-code">ABC123">ABC123</span></div>
                 <div class="status-text">현재 차례: <strong id="current-turn">당신</strong></div>
                 <div class="status-text">공통 미션 수행 숫자: <strong id="flipped-numbers-count">0</strong></div> </div>
 
@@ -795,7 +795,7 @@
                 promptBox.className = 'password-prompt';
                 promptBox.innerHTML = `
                     <h3>방장이 되려면 비밀번호를 입력하세요.</h3>
-                    <input type="password" id="host-password-input" placeholder="비밀번호" autofocus>
+                    <input type="password" id="host-password-input" placeholder="비밀번호">
                     <button id="password-submit-btn">확인</button>
                     <button id="password-cancel-btn">취소</button>
                 `;
@@ -856,7 +856,7 @@
                 gameState.isHost = true;
                 gameState.playerName = playerName;
                 gameState.roomCode = generateRoomCode();
-                // 새로운 드롭다운에서 최대 플레이어 수 가져옴
+                // 새로 배치된 드롭다운에서 최대 플레이어 수 가져옴
                 gameState.maxPlayers = parseInt(document.getElementById('max-players-create').value);
                 
                 gameState.roomRef = database.ref('rooms/' + gameState.roomCode);
@@ -902,9 +902,9 @@
         function showJoinRoom() {
             document.getElementById('join-room-section').classList.remove('hidden');
             // '새 방 만들기' 관련 UI 숨기기
-            document.getElementById('main-action-buttons').classList.add('hidden'); // '방 입장하기' 버튼도 포함된 그룹
-            document.querySelector('.create-room-controls').classList.add('hidden'); // 최대 플레이어 수 + 방 만들기 버튼 그룹
-            document.getElementById('show-join-room-btn').classList.add('hidden'); // 명시적으로 '방 입장하기' 버튼만 숨김
+            document.getElementById('create-room-btn').classList.add('hidden-by-url-param');
+            document.getElementById('max-players-create-group').classList.add('hidden-by-url-param');
+            document.getElementById('main-action-buttons').classList.add('hidden-by-url-param');
         }
 
         // 방 입장 (초대 링크 자동 입장을 위해 prefilledRoomCode 인자 사용)
@@ -1149,12 +1149,14 @@
 
         // 게임 시작
         async function startGame() {
+            console.log('startGame 함수 시작');
             if (!gameState.roomCode) {
                 showMessage('먼저 방을 생성하거나 입장해주세요!', 'error');
                 return;
             }
             
             const requiredMissions = gameState.boardSize * gameState.boardSize;
+            console.log(`필요 미션 수: ${requiredMissions}, 현재 미션 수: ${gameState.missions.length}`);
             if (gameState.missions.length < requiredMissions) {
                 showMessage(`미션이 최소 ${requiredMissions}개 필요합니다! 현재 ${gameState.missions.length}개`, 'error');
                 return;
@@ -1165,6 +1167,7 @@
                 return;
             }
             
+            console.log(`현재 플레이어 수: ${gameState.playerList.length}`);
             if (gameState.playerList.length < 2) {
                 showMessage('게임을 시작하려면 최소 2명 이상의 플레이어가 필요합니다!', 'error');
                 return;
@@ -1172,6 +1175,7 @@
 
             const firstPlayerSelect = document.getElementById('first-player-select');
             const firstPlayer = firstPlayerSelect.value;
+            console.log(`선택된 선공 플레이어: ${firstPlayer}`);
             if (!firstPlayer) {
                 showMessage('선공 플레이어를 선택해주세요!', 'error');
                 return;
@@ -1179,12 +1183,16 @@
             
             const firstPlayerIndex = gameState.playerList.indexOf(firstPlayer);
             
-            // 게임 시작 시 미션 맵 생성 및 저장
-            const shuffledNumbers = Array.from({length: requiredMissions}, (_, i) => i + 1).sort(() => Math.random() - 0.5);
+            console.log('미션 맵 생성 시작');
+            const shuffledMissions = [...gameState.missions].sort(() => Math.random() - 0.5).slice(0, requiredMissions);
+            // 1부터 requiredMissions까지의 숫자를 생성하고 섞습니다.
+            const shuffledNumbersForMap = Array.from({length: requiredMissions}, (_, i) => i + 1).sort(() => Math.random() - 0.5);
+
             const missionMap = {};
             for (let i = 0; i < requiredMissions; i++) {
-                missionMap[shuffledNumbers[i]] = gameState.missions[i];
+                missionMap[shuffledNumbersForMap[i]] = shuffledMissions[i];
             }
+            console.log('생성된 missionMap:', missionMap);
             
             try {
                 const winCondition = document.querySelector('input[name="win-condition"]:checked').value;
@@ -1192,6 +1200,7 @@
                 // 방 생성 시 설정된 maxPlayers 값을 사용
                 const selectedMaxPlayers = gameState.maxPlayers; 
                 
+                console.log('Firebase room 업데이트 시도');
                 await gameState.roomRef.update({
                     gameStarted: true,
                     winCondition: parseInt(winCondition),
@@ -1205,6 +1214,7 @@
                     missionMap: missionMap, // 생성된 미션 맵 저장
                     bingoClaimed: null
                 });
+                console.log('Firebase room 업데이트 성공');
 
                 // 모든 플레이어의 boardState 초기화 (Firebase 데이터 삭제 후 다시 생성)
                 const updates = {};
@@ -1212,10 +1222,13 @@
                     updates[`players/${player}/boardState`] = {};
                 }
                 await gameState.roomRef.update(updates);
+                console.log('플레이어 boardState 초기화 성공');
                 
             } catch (error) {
                 showMessage('게임 시작에 실패했습니다: ' + error.message, 'error');
+                console.error('게임 시작 오류:', error);
             }
+            console.log('startGame 함수 종료');
         }
 
         // 게임 데이터 로드 (setupRoomListeners가 대부분 처리하므로 간단해짐)
@@ -1662,16 +1675,9 @@
             document.getElementById('auto-join-hint').classList.add('hidden');
             
             // '새 방 만들기'와 '방 입장하기' 버튼 그룹을 다시 보이게 함
-            const mainActionButtons = document.getElementById('main-action-buttons');
-            mainActionButtons.classList.remove('hidden');
-            document.getElementById('create-room-btn').style.display = 'inline-block';
-            document.getElementById('show-join-room-btn').style.display = 'inline-block';
-            
-            // 새로운 방 만들기 컨트롤 그룹도 보이게 설정
-            document.querySelector('.create-room-controls').classList.remove('hidden');
-            // '방 입장하기' 버튼도 다시 보이도록 클래스 제거
-            document.getElementById('show-join-room-btn').classList.remove('hidden-by-url-param');
-
+            document.getElementById('create-room-btn').classList.remove('hidden-by-url-param');
+            document.getElementById('max-players-create-group').classList.remove('hidden-by-url-param');
+            document.getElementById('main-action-buttons').classList.remove('hidden-by-url-param');
 
             document.getElementById('room-code').readOnly = false; // 방 코드 수정 가능하게
             
@@ -1953,12 +1959,11 @@
             const nameInput = document.getElementById('player-name');
             const hintElement = document.getElementById('auto-join-hint');
             const createRoomControls = document.querySelector('.create-room-controls'); // 방 만들기 컨트롤 그룹
-            const showJoinRoomBtn = document.getElementById('show-join-room-btn'); // '방 입장하기' 버튼
-            const gameOptionsSection = document.getElementById('game-options-section'); // 게임 옵션 섹션
             const mainActionButtons = document.getElementById('main-action-buttons'); // '새 방 만들기'와 '방 입장하기' 버튼 그룹
+            const gameOptionsSection = document.getElementById('game-options-section'); // 게임 옵션 섹션
 
             // DOM 요소가 아직 준비되지 않았다면 재시도 (재귀 호출)
-            if (!joinSection || !roomCodeInput || !nameInput || !hintElement || !createRoomControls || !showJoinRoomBtn || !gameOptionsSection || !mainActionButtons) {
+            if (!joinSection || !roomCodeInput || !nameInput || !hintElement || !createRoomControls || !mainActionButtons || !gameOptionsSection) {
                 console.error('❌ 필요한 DOM 요소를 찾을 수 없음. 재시도합니다.');
                 setTimeout(() => performAutoJoin(roomCode), 100);
                 return;
@@ -1967,9 +1972,8 @@
             console.log('✅ DOM 요소 모두 준비됨');
             
             // '새 방 만들기' 관련 UI 숨기기
-            createRoomControls.classList.add('hidden'); // 최대 플레이어 수 + 방 만들기 버튼 그룹
-            mainActionButtons.classList.add('hidden'); // '새 방 만들기', '방 입장하기' 그룹을 숨김
-            showJoinRoomBtn.classList.add('hidden-by-url-param'); // '방 입장하기' 버튼에 전용 클래스 추가 (스타일 적용)
+            createRoomControls.classList.add('hidden-by-url-param'); // 최대 플레이어 수 + 방 만들기 버튼 그룹
+            mainActionButtons.classList.add('hidden-by-url-param'); // '새 방 만들기', '방 입장하기' 그룹을 숨김
 
             // "방 입장" 섹션만 보이게 하기
             joinSection.classList.remove('hidden');
@@ -1982,7 +1986,10 @@
             // 초대 링크로 들어온 경우, 게임 옵션 섹션 숨김 (게임 시작 전 설정 화면)
             gameOptionsSection.classList.add('hidden');
 
-            nameInput.focus();
+            // autofocus 에러 방지를 위해 수동 포커스
+            if (document.activeElement !== nameInput) { // 이미 포커스된 요소가 nameInput이 아니라면
+                nameInput.focus();
+            }
 
             showMessage(`🎉 초대 링크로 접속했습니다! 방 코드: ${roomCode}\n닉네임을 입력하고 입장하세요!`, 'success');
             
