@@ -521,7 +521,38 @@
         .create-room-controls #max-players-create {
             width: auto; /* 자동 너비 */
             min-width: 100px; /* 최소 너비 설정 */
+            flex-grow: 1; /* 남은 공간을 채우도록 성장 */
         }
+
+        /* '새 방 만들기' 버튼 크기 키우기 */
+        .create-room-controls #create-room-btn {
+            padding: 15px 30px; /* 패딩을 늘려 크기 키움 */
+            font-size: 18px; /* 글자 크기 키움 */
+            flex-shrink: 0; /* 줄어들지 않도록 */
+        }
+
+        /* 방 입장하기 버튼 숨김을 위한 클래스 추가 */
+        #show-join-room-btn.hidden-by-url-param {
+            display: none;
+        }
+
+        /* 최대 플레이어 수 드롭다운의 label과 select가 가로로 나란히 오도록 */
+        .input-group.inline-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-grow: 1;
+        }
+
+        .input-group.inline-label label {
+            margin-bottom: 0;
+            flex-shrink: 0; /* 라벨이 줄어들지 않도록 */
+        }
+        .input-group.inline-label select {
+            width: auto; /* select가 자동으로 너비 조정 */
+            flex-grow: 1; /* 남은 공간 채우기 */
+        }
+
     </style>
 </head>
 <body>
@@ -530,7 +561,7 @@
             <h1>🎯 밈주머니 빙고 게임!</h1>
             <p>밈주머니와 함께 즐기는 쐐기 빙고!</p>
             <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
-                v4.6 - 기본 미션 세이브/로드 기능 추가
+                v4.5 - 선공후공 버그 수정/ 초대받은 사람 UI 변경
             </div>
         </div>
 
@@ -543,7 +574,7 @@
                 </div>
                 
                 <div class="create-room-controls">
-                    <div class="input-group" style="flex-grow: 1;">
+                    <div class="input-group inline-label" id="max-players-create-group">
                         <label for="max-players-create">최대 플레이어 수:</label>
                         <select id="max-players-create">
                             <option value="2">2명</option>
@@ -712,7 +743,8 @@
             "친절한 어조로 질문에 답한 미션",
             "내부 지침을 어겨서 답변을 잘라먹은 미션",
             "뜬금없는 농담 미션",
-            "공손하지만 단호한 답변 미션"
+            "공손하지만 단호한 답변 미션",
+            "생성형 AI가 답변했다고 동네방네 떠벌린 미션" // 10개로 늘림
         ];
 
         // 게임 상태 변수들
@@ -743,9 +775,14 @@
         function showMessage(message, type = 'info') {
             const statusDiv = document.getElementById('status-message');
             statusDiv.innerHTML = `<div class="${type}">${message}</div>`;
+            statusDiv.style.opacity = '1';
+            statusDiv.style.transition = 'opacity 0.5s ease-out'; // 페이드 아웃 효과
             setTimeout(() => {
-                statusDiv.innerHTML = '';
-            }, 5000);
+                statusDiv.style.opacity = '0';
+                setTimeout(() => {
+                    statusDiv.innerHTML = '';
+                }, 500); // 완전히 사라진 후 내용 비우기
+            }, 3000); // 3초 후 페이드 아웃 시작
         }
 
         // 비밀번호 입력 팝업 생성 함수
@@ -864,10 +901,10 @@
         // 방 입장 UI 표시
         function showJoinRoom() {
             document.getElementById('join-room-section').classList.remove('hidden');
-            // '새 방 만들기' 버튼 그룹을 숨김
-            document.getElementById('main-action-buttons').classList.add('hidden');
-            document.querySelector('.create-room-controls').classList.add('hidden'); // 추가
-            document.getElementById('show-join-room-btn').classList.add('hidden'); // 추가
+            // '새 방 만들기' 관련 UI 숨기기
+            document.getElementById('main-action-buttons').classList.add('hidden'); // '방 입장하기' 버튼도 포함된 그룹
+            document.querySelector('.create-room-controls').classList.add('hidden'); // 최대 플레이어 수 + 방 만들기 버튼 그룹
+            document.getElementById('show-join-room-btn').classList.add('hidden'); // 명시적으로 '방 입장하기' 버튼만 숨김
         }
 
         // 방 입장 (초대 링크 자동 입장을 위해 prefilledRoomCode 인자 사용)
@@ -1049,8 +1086,8 @@
                 gameState.missions = newMissions; // 로컬 gameState 업데이트
                 updateMissionsDisplay(); // UI 즉시 업데이트
                 
-                // 호스트만 Firebase에 미션 업데이트
-                if (gameState.isHost) {
+                // 호스트만 Firebase에 미션 업데이트 (방이 생성된 경우에만)
+                if (gameState.isHost && gameState.roomRef) {
                     await gameState.roomRef.child('missions').set(newMissions);
                 }
                 
@@ -1068,8 +1105,8 @@
                 gameState.missions = newMissions; // 로컬 gameState 업데이트
                 updateMissionsDisplay(); // UI 즉시 업데이트
 
-                // 호스트만 Firebase에 미션 업데이트
-                if (gameState.isHost) {
+                // 호스트만 Firebase에 미션 업데이트 (방이 생성된 경우에만)
+                if (gameState.isHost && gameState.roomRef) {
                     await gameState.roomRef.child('missions').set(newMissions);
                 }
                 
@@ -1082,7 +1119,7 @@
         function saveMissions() {
             try {
                 localStorage.setItem('savedBingoMissions', JSON.stringify(gameState.missions));
-                showMessage('현재 미션 목록이 저장되었습니다!', 'success');
+                showMessage('현재 미션 목록이 저장되었습니다! ✅', 'success');
             } catch (e) {
                 showMessage('미션 저장에 실패했습니다. 브라우저 저장 공간이 부족할 수 있습니다.', 'error');
                 console.error("Failed to save missions to localStorage:", e);
@@ -1095,14 +1132,14 @@
                 const savedMissions = localStorage.getItem('savedBingoMissions');
                 if (savedMissions) {
                     gameState.missions = JSON.parse(savedMissions);
-                    showMessage('저장된 미션 목록을 불러왔습니다!', 'success');
+                    showMessage('저장된 미션 목록을 불러왔습니다! 📝', 'success');
                 } else {
                     gameState.missions = [...defaultMissions]; // 기본 미션 사용
-                    showMessage('저장된 미션이 없습니다. 기본 미션 목록을 불러왔습니다.', 'info');
+                    showMessage('저장된 미션이 없습니다. 기본 미션 목록을 불러왔습니다. ℹ️', 'info');
                 }
                 updateMissionsDisplay(); // 미션 UI 업데이트
             } catch (e) {
-                showMessage('미션 불러오기에 실패했습니다.', 'error');
+                showMessage('미션 불러오기에 실패했습니다. ❌', 'error');
                 console.error("Failed to load missions from localStorage:", e);
                 gameState.missions = [...defaultMissions]; // 오류 시 기본 미션 사용
                 updateMissionsDisplay();
@@ -1143,29 +1180,29 @@
             const firstPlayerIndex = gameState.playerList.indexOf(firstPlayer);
             
             // 게임 시작 시 미션 맵 생성 및 저장
-            const shuffledMissions = [...gameState.missions].sort(() => Math.random() - 0.5).slice(0, requiredMissions);
+            const shuffledNumbers = Array.from({length: requiredMissions}, (_, i) => i + 1).sort(() => Math.random() - 0.5);
             const missionMap = {};
-            for (let i = 1; i <= requiredMissions; i++) {
-                missionMap[i] = shuffledMissions[i - 1];
+            for (let i = 0; i < requiredMissions; i++) {
+                missionMap[shuffledNumbers[i]] = gameState.missions[i];
             }
             
             try {
                 const winCondition = document.querySelector('input[name="win-condition"]:checked').value;
                 const selectedBoardSize = 3;
-                // 게임 시작 시에는 기존의 게임 옵션 섹션의 max-players 드롭다운을 사용
-                const selectedMaxPlayers = parseInt(document.getElementById('max-players-create').value); // 이 부분도 변경
+                // 방 생성 시 설정된 maxPlayers 값을 사용
+                const selectedMaxPlayers = gameState.maxPlayers; 
                 
                 await gameState.roomRef.update({
                     gameStarted: true,
                     winCondition: parseInt(winCondition),
                     boardSize: selectedBoardSize,
                     maxPlayers: selectedMaxPlayers,
-                    startedAt: Date.now(),
+                    startedAt: firebase.database.ServerValue.TIMESTAMP, // 시작 시간 기록
                     currentTurn: firstPlayerIndex,
                     flippedNumbers: {}, // 공통 뒤집힌 숫자 초기화
                     winner: null,
                     gameEnded: false,
-                    missionMap: missionMap,
+                    missionMap: missionMap, // 생성된 미션 맵 저장
                     bingoClaimed: null
                 });
 
@@ -1629,8 +1666,12 @@
             mainActionButtons.classList.remove('hidden');
             document.getElementById('create-room-btn').style.display = 'inline-block';
             document.getElementById('show-join-room-btn').style.display = 'inline-block';
-            document.querySelector('.create-room-controls').classList.remove('hidden'); // 추가
-            document.getElementById('show-join-room-btn').classList.remove('hidden'); // 추가
+            
+            // 새로운 방 만들기 컨트롤 그룹도 보이게 설정
+            document.querySelector('.create-room-controls').classList.remove('hidden');
+            // '방 입장하기' 버튼도 다시 보이도록 클래스 제거
+            document.getElementById('show-join-room-btn').classList.remove('hidden-by-url-param');
+
 
             document.getElementById('room-code').readOnly = false; // 방 코드 수정 가능하게
             
@@ -1911,13 +1952,13 @@
             const roomCodeInput = document.getElementById('room-code');
             const nameInput = document.getElementById('player-name');
             const hintElement = document.getElementById('auto-join-hint');
-            const mainActionButtons = document.getElementById('main-action-buttons');
-            const createRoomControls = document.querySelector('.create-room-controls'); // 추가: 방 만들기 컨트롤 그룹
-            const showJoinRoomBtn = document.getElementById('show-join-room-btn'); // 추가: 방 입장하기 버튼
-            const gameOptionsSection = document.getElementById('game-options-section'); // 추가: 게임 옵션 섹션
+            const createRoomControls = document.querySelector('.create-room-controls'); // 방 만들기 컨트롤 그룹
+            const showJoinRoomBtn = document.getElementById('show-join-room-btn'); // '방 입장하기' 버튼
+            const gameOptionsSection = document.getElementById('game-options-section'); // 게임 옵션 섹션
+            const mainActionButtons = document.getElementById('main-action-buttons'); // '새 방 만들기'와 '방 입장하기' 버튼 그룹
 
             // DOM 요소가 아직 준비되지 않았다면 재시도 (재귀 호출)
-            if (!joinSection || !roomCodeInput || !nameInput || !hintElement || !mainActionButtons || !gameOptionsSection || !createRoomControls || !showJoinRoomBtn) {
+            if (!joinSection || !roomCodeInput || !nameInput || !hintElement || !createRoomControls || !showJoinRoomBtn || !gameOptionsSection || !mainActionButtons) {
                 console.error('❌ 필요한 DOM 요소를 찾을 수 없음. 재시도합니다.');
                 setTimeout(() => performAutoJoin(roomCode), 100);
                 return;
@@ -1926,10 +1967,10 @@
             console.log('✅ DOM 요소 모두 준비됨');
             
             // '새 방 만들기' 관련 UI 숨기기
-            mainActionButtons.classList.add('hidden');
-            createRoomControls.classList.add('hidden'); // 추가
-            showJoinRoomBtn.classList.add('hidden'); // 추가
-            
+            createRoomControls.classList.add('hidden'); // 최대 플레이어 수 + 방 만들기 버튼 그룹
+            mainActionButtons.classList.add('hidden'); // '새 방 만들기', '방 입장하기' 그룹을 숨김
+            showJoinRoomBtn.classList.add('hidden-by-url-param'); // '방 입장하기' 버튼에 전용 클래스 추가 (스타일 적용)
+
             // "방 입장" 섹션만 보이게 하기
             joinSection.classList.remove('hidden');
             roomCodeInput.value = roomCode; // 방 코드 자동 입력
@@ -1938,7 +1979,7 @@
             
             hintElement.classList.remove('hidden');
             
-            // 초대 링크로 들어온 경우, 게임 옵션 섹션 숨김
+            // 초대 링크로 들어온 경우, 게임 옵션 섹션 숨김 (게임 시작 전 설정 화면)
             gameOptionsSection.classList.add('hidden');
 
             nameInput.focus();
