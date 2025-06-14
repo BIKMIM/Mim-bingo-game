@@ -1049,96 +1049,96 @@ async function joinRoom(prefilledRoomCode = null) {
 }
 
         // 방 데이터 리스너 설정 (모든 방 상태 변화를 여기서 처리)
-        function setupRoomListeners() {
-            if (!gameState.roomRef) return;
+function setupRoomListeners() {
+    if (!gameState.roomRef) return;
 
-            gameState.roomRef.on('value', (snapshot) => {
-                const roomData = snapshot.val();
-                if (roomData) {
-                    // `gameState`의 핵심 값들을 Firebase의 최신 `roomData`로 업데이트
-                    gameState.boardSize = roomData.boardSize || 3;
-                    gameState.maxPlayers = roomData.maxPlayers || 2;
-                    gameState.gameStarted = roomData.gameStarted || false;
-                    gameState.winCondition = roomData.winCondition || 1;
-                    gameState.currentTurn = roomData.currentTurn !== null ? roomData.currentTurn : 0;
-                    gameState.missionMap = roomData.missionMap || {};
-                    // 공통 뒤집힌 숫자 동기화 (객체 키를 배열로 변환)
-                    gameState.flippedNumbers = Object.keys(roomData.flippedNumbers || {}).map(Number);
-                    
-                    // 플레이어 목록 업데이트
-                    if (roomData.players) {
-                        gameState.players = roomData.players; // UID를 키로 한 전체 플레이어 객체
-                        // 턴 순서는 playerOrderUids를 사용합니다.
-                        gameState.playerList = roomData.playerOrderUids || []; // UID 배열
-                    } else {
-                        gameState.players = {};
-                        gameState.playerList = [];
-                    }
-                    updatePlayersDisplay();
-                    
-                    // 미션 목록 업데이트 (방장이 아니면 Firebase 미션 목록 동기화)
-                    if (!gameState.isHost && roomData.missions) {
-                        gameState.missions = roomData.missions;
-                    }
-                    updateMissionsDisplay();
+    gameState.roomRef.on('value', (snapshot) => {
+        const roomData = snapshot.val();
+        if (roomData) {
+            // `gameState`의 핵심 값들을 Firebase의 최신 `roomData`로 업데이트
+            gameState.boardSize = roomData.boardSize || 3;
+            gameState.maxPlayers = roomData.maxPlayers || 2;
+            gameState.gameStarted = roomData.gameStarted || false;
+            gameState.winCondition = roomData.winCondition || 1;
+            gameState.currentTurn = roomData.currentTurn !== null ? roomData.currentTurn : 0;
+            gameState.missionMap = roomData.missionMap || {};
+            // 공통 뒤집힌 숫자 동기화 (객체 키를 배열로 변환)
+            gameState.flippedNumbers = Object.keys(roomData.flippedNumbers || {}).map(Number);
+            
+            // 플레이어 목록 업데이트
+            if (roomData.players) {
+                gameState.players = roomData.players; // UID를 키로 한 전체 플레이어 객체
+                // 턴 순서는 playerOrderUids를 사용합니다.
+                gameState.playerList = roomData.playerOrderUids || []; // UID 배열
+            } else {
+                gameState.players = {};
+                gameState.playerList = [];
+            }
+            updatePlayersDisplay();
+            
+            // 미션 목록 업데이트 (방장이 아니면 Firebase 미션 목록 동기화)
+            if (!gameState.isHost && roomData.missions) {
+                gameState.missions = roomData.missions;
+            }
+            updateMissionsDisplay();
 
-                    // UI 화면 전환 (게임 시작 여부에 따라)
-                    if (gameState.gameStarted) {
-                        document.getElementById('game-setup').style.display = 'none';
-                        document.getElementById('game-area').style.display = 'block';
-                        document.getElementById('current-room-code').textContent = gameState.roomCode;
-                        document.getElementById('flipped-numbers-count').textContent = gameState.flippedNumbers.length; // 공통 뒤집힌 숫자 UI 업데이트
-                        
-                        // 게임 시작 후 자신의 빙고판이 없거나 크기가 다를 경우 생성 시도
-                        const totalCells = gameState.boardSize * gameState.boardSize;
-                        if (gameState.bingoBoard.length !== totalCells || document.getElementById('bingo-board').children.length !== totalCells) {
-                                if (Object.keys(gameState.missionMap).length === totalCells) {
-                                    generateBingoBoard();
-                                }
+            // UI 화면 전환 (게임 시작 여부에 따라)
+            if (gameState.gameStarted) {
+                document.getElementById('game-setup').style.display = 'none';
+                document.getElementById('game-area').style.display = 'block';
+                document.getElementById('current-room-code').textContent = gameState.roomCode;
+                document.getElementById('flipped-numbers-count').textContent = gameState.flippedNumbers.length; // 공통 뒤집힌 숫자 UI 업데이트
+                
+                // 게임 시작 후 자신의 빙고판이 없거나 크기가 다를 경우 생성 시도
+                const totalCells = gameState.boardSize * gameState.boardSize;
+                if (gameState.bingoBoard.length !== totalCells || document.getElementById('bingo-board').children.length !== totalCells) {
+                        if (Object.keys(gameState.missionMap).length === totalCells) {
+                            generateBingoBoard();
                         }
-                    } else {
-                        document.getElementById('game-setup').style.display = 'block';
-                        document.getElementById('game-area').style.display = 'none';
-                    }
-
-                    updateTurnDisplay();
-                    // 자신의 boardState는 이제 gameState.playerUID를 사용하여 접근
-                    if (gameState.players[gameState.playerUID] && gameState.players[gameState.playerUID].boardState) {
-                        syncBingoBoard(gameState.players[gameState.playerUID].boardState);
-                    } else {
-                        syncBingoBoard({});
-                    }
-                    
-                    checkBingoPossibility();
-                    updateBingoCellClickability();
-                    
-                    // 방장 전용 UI 업데이트 (선공 선택)
-                    if (gameState.isHost && gameState.playerList.length > 1) {
-                        document.getElementById('first-player-section').classList.remove('hidden');
-                        updateFirstPlayerOptions();
-                    } else {
-                        document.getElementById('first-player-section').classList.add('hidden');
-                    }
-
-                    // 승자가 결정되었다면 승리 메시지 표시
-                    if (roomData.winner) {
-                        displayWinnerMessage(roomData.winner, roomData.winCondition);
-                        document.getElementById('bingo-button').disabled = true;
-                        document.getElementById('turn-end-button').disabled = true;
-                        document.getElementById('bingo-button').style.display = 'none'; // 버튼 숨김
-                        document.getElementById('turn-end-button').style.display = 'none'; // 버튼 숨김
-                    } else {
-                        const winnerOverlay = document.getElementById('winner-overlay');
-                        if (winnerOverlay) winnerOverlay.remove();
-                        // 게임 중이 아니라면 버튼을 다시 보이게 함 (setup 화면에선 항상 보임)
-                        if (gameState.gameStarted) {
-                            document.getElementById('bingo-button').style.display = 'block';
-                            document.getElementById('turn-end-button').style.display = 'block';
-                        }
-                    }
                 }
-            });
+            } else {
+                document.getElementById('game-setup').style.display = 'block';
+                document.getElementById('game-area').style.display = 'none';
+            }
+
+            updateTurnDisplay();
+            // 자신의 boardState는 이제 gameState.playerUID를 사용하여 접근
+            if (gameState.players[gameState.playerUID] && gameState.players[gameState.playerUID].boardState) {
+                syncBingoBoard(gameState.players[gameState.playerUID].boardState);
+            } else {
+                syncBingoBoard({});
+            }
+            
+            checkBingoPossibility();
+            updateBingoCellClickability();
+            
+            // 방장 전용 UI 업데이트 (선공 선택)
+            if (gameState.isHost && gameState.playerList.length > 1) {
+                document.getElementById('first-player-section').classList.remove('hidden');
+                updateFirstPlayerOptions();
+            } else {
+                document.getElementById('first-player-section').classList.add('hidden');
+            }
+
+            // 승자가 결정되었다면 승리 메시지 표시
+            if (roomData.winner) {
+                displayWinnerMessage(roomData.winner, roomData.winCondition);
+                document.getElementById('bingo-button').disabled = true;
+                document.getElementById('turn-end-button').disabled = true;
+                document.getElementById('bingo-button').style.display = 'none'; // 버튼 숨김
+                document.getElementById('turn-end-button').style.display = 'none'; // 버튼 숨김
+            } else {
+                const winnerOverlay = document.getElementById('winner-overlay');
+                if (winnerOverlay) winnerOverlay.remove();
+                // 게임 중이 아니라면 버튼을 다시 보이게 함 (setup 화면에선 항상 보임)
+                if (gameState.gameStarted) {
+                    document.getElementById('bingo-button').style.display = 'block';
+                    document.getElementById('turn-end-button').style.display = 'block';
+                }
+            }
         }
+    });
+}
 
         // 미션 추가
         async function addMission() {
