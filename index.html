@@ -889,71 +889,71 @@ auth.onAuthStateChanged(user => {
 
 
         // 방 생성 (호스트 비밀번호 필요)
-        async function createRoom() {
-            const playerNameInput = document.getElementById('player-name').value.trim();
-            if (!playerNameInput) {
-                showMessage('플레이어 이름을 입력해주세요!', 'error');
-                return;
-            }
-            if (!gameState.playerUID) { // 익명 UID가 아직 없는 경우 (드물지만)
-                showMessage('로그인 중입니다. 잠시 후 다시 시도해주세요.', 'error');
-                return;
-            }
+async function createRoom() {
+    const playerNameInput = document.getElementById('player-name').value.trim();
+    if (!playerNameInput) {
+        showMessage('플레이어 이름을 입력해주세요!', 'error');
+        return;
+    }
+    if (!gameState.playerUID) { // 익명 UID가 아직 없는 경우 (드물지만)
+        showMessage('로그인 중입니다. 잠시 후 다시 시도해주세요.', 'error');
+        return;
+    }
 
-            const password = await createPasswordPrompt();
-            if (password !== HOST_PASSWORD) {
-                showMessage('비밀번호가 올바르지 않거나 취소되었습니다!', 'error');
-                return;
-            }
+    const password = await createPasswordPrompt();
+    if (password !== HOST_PASSWORD) {
+        showMessage('비밀번호가 올바르지 않거나 취소되었습니다!', 'error');
+        return;
+    }
 
-            try {
-                gameState.isHost = true;
-                gameState.playerName = playerNameInput; // 사용자가 입력한 닉네임
-                gameState.roomCode = generateRoomCode();
-                gameState.maxPlayers = parseInt(document.getElementById('max-players-create').value);
-                
-                gameState.roomRef = database.ref('rooms/' + gameState.roomCode);
-                
-                await gameState.roomRef.set({
-                    host: gameState.playerUID, // 호스트의 UID를 저장
-                    players: {
-                        [gameState.playerUID]: { // 플레이어 정보의 키는 이제 UID
-                            name: gameState.playerName, // 닉네임은 name 필드에
-                            isHost: true,
-                            joinedAt: Date.now(),
-                            boardState: {}
-                        }
-                    },
-                    missions: gameState.missions, // 방 생성 시 현재 로드된 미션 목록으로 초기화
-                    gameStarted: false,
-                    winCondition: 1,
-                    boardSize: gameState.boardSize, // 3으로 고정
-                    maxPlayers: gameState.maxPlayers,
-                    createdAt: Date.now(),
-                    flippedNumbers: {}, // 공통 뒤집힌 숫자 초기화
-                    currentTurn: 0,
-                    winner: null,
-                    gameEnded: false,
-                    missionMap: {},
-                    bingoClaimed: null,
-                    playerOrderUids: [] // 새로 추가: 턴 순서를 위한 UID 배열
-                });
+    try {
+        gameState.isHost = true;
+        gameState.playerName = playerNameInput; // 사용자가 입력한 닉네임
+        gameState.roomCode = generateRoomCode();
+        gameState.maxPlayers = parseInt(document.getElementById('max-players-create').value);
+        
+        gameState.roomRef = database.ref('rooms/' + gameState.roomCode);
+        
+        await gameState.roomRef.set({
+            host: gameState.playerUID, // 호스트의 UID를 저장
+            players: {
+                [gameState.playerUID]: { // 플레이어 정보의 키는 이제 UID
+                    name: gameState.playerName, // 닉네임은 name 필드에
+                    isHost: true,
+                    joinedAt: Date.now(),
+                    boardState: {}
+                }
+            },
+            missions: gameState.missions, // 방 생성 시 현재 로드된 미션 목록으로 초기화
+            gameStarted: false,
+            winCondition: 1,
+            boardSize: gameState.boardSize, // 3으로 고정
+            maxPlayers: gameState.maxPlayers,
+            createdAt: Date.now(),
+            flippedNumbers: {}, // 공통 뒤집힌 숫자 초기화
+            currentTurn: 0,
+            winner: null,
+            gameEnded: false,
+            missionMap: {},
+            bingoClaimed: null,
+            playerOrderUids: [] // 새로 추가: 턴 순서를 위한 UID 배열
+        });
 
-                // 방 생성 시 playerOrderUids 초기화 (호스트만 포함)
-                await gameState.roomRef.child('playerOrderUids').set([gameState.playerUID]);
+        // 방 생성 시 playerOrderUids 초기화 (호스트만 포함)
+        await gameState.roomRef.child('playerOrderUids').set([gameState.playerUID]);
 
-                setupRoomListeners();
-                
-                const shareLink = `${window.location.origin}${window.location.pathname}?room=${gameState.roomCode}`;
-                document.getElementById('share-link').value = shareLink;
-                document.getElementById('share-section').classList.remove('hidden');
-                
-                showMessage(`방이 생성되었습니다! 방 코드: ${gameState.roomCode}`, 'success');
-                
-            } catch (error) {
-                showMessage('방 생성에 실패했습니다: ' + error.message, 'error');
-            }
-        }
+        setupRoomListeners();
+        
+        const shareLink = `${window.location.origin}${window.location.pathname}?room=${gameState.roomCode}`;
+        document.getElementById('share-link').value = shareLink;
+        document.getElementById('share-section').classList.remove('hidden');
+        
+        showMessage(`방이 생성되었습니다! 방 코드: ${gameState.roomCode}`, 'success');
+        
+    } catch (error) {
+        showMessage('방 생성에 실패했습니다: ' + error.message, 'error');
+    }
+}
 
         // 방 입장 UI 표시
         function showJoinRoom() {
