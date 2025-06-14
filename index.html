@@ -591,20 +591,17 @@
                             <option value="12">12명</option>
                         </select>
                     </div>
-                    <button class="btn btn-primary" id="create-room-btn" onclick="createRoom()" disabled>새 방 만들기</button>
-                </div>
+                    <button class="btn btn-primary" id="create-room-btn" disabled>새 방 만들기</button> </div>
 
                 <div class="button-group" id="main-action-buttons" style="margin-top: 15px; pointer-events: none; opacity: 0.5;">
-                    <button class="btn btn-secondary" id="show-join-room-btn" onclick="showJoinRoom()" disabled>방 입장하기</button>
-                </div>
+                    <button class="btn btn-secondary" id="show-join-room-btn" disabled>방 입장하기</button> </div>
 
                 <div id="join-room-section" class="hidden" style="margin-top: 15px;">
                     <div class="input-group">
                         <label for="room-code">방 코드</label>
                         <input type="text" id="room-code" placeholder="방 코드를 입력하세요" maxlength="8">
                     </div>
-                    <button class="btn btn-primary" onclick="joinRoom()">방 입장</button>
-                    <p id="auto-join-hint" class="hidden" style="color: #667eea; font-size: 14px; margin-top: 10px;">
+                    <button class="btn btn-primary" id="join-room-btn">방 입장</button> <p id="auto-join-hint" class="hidden" style="color: #667eea; font-size: 14px; margin-top: 10px;">
                         💡 팁: 이름 입력 후 Enter키를 누르면 바로 입장됩니다!
                     </p>
                 </div>
@@ -616,8 +613,7 @@
                         <h4 style="color: #4a5568; margin-bottom: 10px;">🔗 친구 초대 링크</h4>
                         <div style="display: flex; gap: 10px; align-items: center;">
                             <input type="text" id="share-link" readonly style="flex: 1; background: white; border: 1px solid #e2e8f0; padding: 8px; border-radius: 4px; font-size: 14px;">
-                            <button class="btn btn-primary" onclick="copyShareLink()" style="padding: 8px 16px;">복사</button>
-                        </div>
+                            <button class="btn btn-primary" id="copy-share-link-btn" style="padding: 8px 16px;">복사</button> </div>
                         <p style="color: #718096; font-size: 12px; margin-top: 8px;">
                             이 링크를 친구들에게 보내면 바로 방에 입장할 수 있어요!
                         </p>
@@ -636,12 +632,9 @@
                 <h3>📝 미션 텍스트</h3>
                 <div class="mission-input-area">
                     <input type="text" class="mission-input" id="mission-input" placeholder="미션 내용을 입력하세요" maxlength="20">
-                    <button class="btn btn-primary" onclick="addMission()">추가</button>
-                </div>
+                    <button class="btn btn-primary" id="add-mission-btn">추가</button> </div>
                 <div class="button-group" style="margin-bottom: 15px;">
-                    <button class="btn btn-secondary" onclick="saveMissions()">미션 저장</button>
-                    <button class="btn btn-secondary" onclick="loadMissions()">미션 불러오기 (기본값)</button>
-                </div>
+                    <button class="btn btn-secondary" id="save-missions-btn">미션 저장</button> <button class="btn btn-secondary" id="load-missions-btn">미션 불러오기 (기본값)</button> </div>
                 <div class="missions-list" id="missions-list">
                     </div>
                 <div id="current-mission-count" style="text-align: center; margin-top: 10px; font-size: 14px; color: #718096;">
@@ -702,10 +695,10 @@
                 </div>
             
             <div class="game-buttons">
-                <button id="bingo-button" class="btn btn-primary" onclick="claimBingo()" disabled>
+                <button id="bingo-button" onclick="claimBingo()" class="btn btn-primary" disabled>
                     🎉 빙고!
                 </button>
-                <button id="turn-end-button" class="btn btn-secondary" onclick="turnEnd()" disabled>
+                <button id="turn-end-button" onclick="turnEnd()" class="btn btn-secondary" disabled>
                     ➡️ 턴 종료
                 </button>
             </div>
@@ -1625,7 +1618,7 @@
             }
             
             const roomSnapshot = await gameState.roomRef.once('value');
-            const roomData = roomSnapshot.val();
+            const roomData = snapshot.val();
 
             if (roomData.gameEnded || roomData.winner) {
                 showMessage('게임은 이미 종료되었습니다!', 'error');
@@ -2028,6 +2021,16 @@
             document.getElementById('room-code').addEventListener('input', function(e) {
                 e.target.value = e.target.value.toUpperCase();
             });
+            // '새 방 만들기' 버튼 이벤트 리스너
+            document.getElementById('create-room-btn').addEventListener('click', createRoom);
+            // '방 입장하기' 버튼 이벤트 리스너
+            document.getElementById('join-room-btn').addEventListener('click', joinRoom);
+            // 미션 추가 버튼 이벤트 리스너
+            document.getElementById('add-mission-btn').addEventListener('click', addMission);
+            // 미션 저장 버튼 이벤트 리스너
+            document.getElementById('save-missions-btn').addEventListener('click', saveMissions);
+            // 미션 불러오기 버튼 이벤트 리스너
+            document.getElementById('load-missions-btn').addEventListener('click', loadMissions);
 
             // 빙고판 크기 선택 시 미션 최소 개수 힌트 업데이트 (3x3 고정으로 UI상으로는 영향 없음)
             document.querySelectorAll('input[name="board-size"]').forEach(radio => {
@@ -2063,34 +2066,31 @@
                 }).catch(error => console.error("Failed to remove UID from playerOrderUids on unload:", error));
             }
         });
+        // --- 최후의 디버깅 코드 ---
+        window.onload = function() {
+            console.log("Window loaded. Attempting to re-attach event listeners for debugging.");
 
-// --- 최후의 디버깅 코드 ---
-window.onload = function() {
-    console.log("Window loaded. Attempting to re-attach event listeners for debugging.");
+            const copyShareLinkBtn = document.getElementById('copy-share-link-btn');
+            if (copyShareLinkBtn) {
+                copyShareLinkBtn.removeEventListener('click', copyShareLink); // 혹시 모를 중복 방지
+                copyShareLinkBtn.addEventListener('click', copyShareLink);
+                console.log("Copy button re-attached.");
+            } else {
+                console.error("Copy button NOT found on window.onload!");
+            }
 
-    const copyShareLinkBtn = document.getElementById('copy-share-link-btn');
-    if (copyShareLinkBtn) {
-        copyShareLinkBtn.removeEventListener('click', copyShareLink); // 혹시 모를 중복 방지
-        copyShareLinkBtn.addEventListener('click', copyShareLink);
-        console.log("Copy button re-attached.");
-    } else {
-        console.error("Copy button NOT found on window.onload!");
-    }
-
-    const bingoBoardElement = document.getElementById('bingo-board');
-    if (bingoBoardElement) {
-        // 기존 리스너 제거 (중복 방지 및 초기화)
-        // 안전하게 제거하려면, addEventListener에 사용한 동일한 함수 인스턴스를 removeEventListener에 전달해야 합니다.
-        // 현재는 익명 함수를 사용했으므로, 제거가 어렵습니다.
-        // 하지만 DOMContentLoaded가 이미 실행된 후라면 새로운 리스너가 추가될 것이므로 괜찮습니다.
-        // 간단한 디버깅을 위해 여기에 `bingoBoardElement.addEventListener`를 다시 작성하는 것은 불필요합니다.
-        console.log("Bingo board found.");
-    } else {
-        console.error("Bingo board NOT found on window.onload!");
-    }
-};
-
-        
+            const bingoBoardElement = document.getElementById('bingo-board');
+            if (bingoBoardElement) {
+                // 기존 리스너 제거 (중복 방지 및 초기화)
+                // 안전하게 제거하려면, addEventListener에 사용한 동일한 함수 인스턴스를 removeEventListener에 전달해야 합니다.
+                // 현재는 익명 함수를 사용했으므로, 제거가 어렵습니다.
+                // 하지만 DOMContentLoaded가 이미 실행된 후라면 새로운 리스너가 추가될 것이므로 괜찮습니다.
+                // 간단한 디버깅을 위해 여기에 `bingoBoardElement.addEventListener`를 다시 작성하는 것은 불필요합니다.
+                console.log("Bingo board found.");
+            } else {
+                console.error("Bingo board NOT found on window.onload!");
+            }
+        };
     </script>
 </body>
 </html>
