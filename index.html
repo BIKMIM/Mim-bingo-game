@@ -842,30 +842,50 @@
             });
         }
 
-        // --- 익명 로그인 처리 로직 추가 ---
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                // 사용자 로그인 상태 변경 시 (새로 로그인하거나 이미 로그인되어 있을 때)
-                gameState.playerUID = user.uid; // 익명 UID 저장
-                console.log("Firebase Anonymous User UID:", gameState.playerUID);
+        // --- 익명 로그인 처리 로직 추가 및 UI 활성화 ---
+auth.onAuthStateChanged(user => {
+    if (user) {
+        // 사용자 로그인 상태 변경 시 (새로 로그인하거나 이미 로그인되어 있을 때)
+        gameState.playerUID = user.uid; // 익명 UID 저장
+        console.log("Firebase Anonymous User UID:", gameState.playerUID);
+        
+        // 로그인 완료 후 UI 활성화
+        document.getElementById('player-name').disabled = false;
+        document.getElementById('player-name').placeholder = "당신의 닉네임을 입력하세요";
+        document.getElementById('create-room-btn').disabled = false;
+        document.getElementById('show-join-room-btn').disabled = false;
+        document.querySelector('.create-room-controls').style.pointerEvents = 'auto';
+        document.querySelector('.create-room-controls').style.opacity = '1';
+        document.getElementById('main-action-buttons').style.pointerEvents = 'auto';
+        document.getElementById('main-action-buttons').style.opacity = '1';
 
-                // 여기에 초기화 로직이나 UI 업데이트 로직을 넣을 수 있습니다.
-                // 예를 들어, URL 파라미터 체크 함수를 여기서 호출하여 자동 입장 로직이 `playerUID`를 알 수 있도록 합니다.
-                checkURLParams(); // 로그인 후 URL 파라미터 체크 (자동 입장)
-            } else {
-                // 사용자가 로그아웃했거나 아직 로그인되지 않은 경우 (주로 처음 방문 시)
-                console.log("No Firebase user logged in. Signing in anonymously...");
-                auth.signInAnonymously()
-                    .then(() => {
-                        // 성공적으로 익명 로그인되었으므로, onAuthStateChanged 콜백이 다시 호출될 것입니다.
-                        // 거기서 gameState.playerUID가 설정됩니다.
-                    })
-                    .catch((error) => {
-                        console.error("Error signing in anonymously:", error);
-                        showMessage('게임에 접속할 수 없습니다. 다시 시도해주세요.', 'error');
-                    });
-            }
-        });
+        // URL 파라미터 체크 함수를 여기서 호출하여 자동 입장 로직이 `playerUID`를 알 수 있도록 합니다.
+        checkURLParams(); 
+    } else {
+        // 사용자가 로그아웃했거나 아직 로그인되지 않은 경우 (주로 처음 방문 시)
+        console.log("No Firebase user logged in. Signing in anonymously...");
+        // UI 비활성화 상태 유지 및 메시지 표시
+        document.getElementById('player-name').disabled = true;
+        document.getElementById('player-name').placeholder = "로그인 중...";
+        document.getElementById('create-room-btn').disabled = true;
+        document.getElementById('show-join-room-btn').disabled = true;
+        document.querySelector('.create-room-controls').style.pointerEvents = 'none';
+        document.querySelector('.create-room-controls').style.opacity = '0.5';
+        document.getElementById('main-action-buttons').style.pointerEvents = 'none';
+        document.getElementById('main-action-buttons').style.opacity = '0.5';
+        showMessage('로그인 중입니다. 잠시 기다려주세요...', 'info');
+
+        auth.signInAnonymously()
+            .then(() => { 
+                // 성공적으로 익명 로그인되었으므로, onAuthStateChanged 콜백이 다시 호출될 것입니다.
+                // 거기서 gameState.playerUID가 설정되고 UI가 활성화됩니다.
+            })
+            .catch((error) => {
+                console.error("Error signing in anonymously:", error);
+                showMessage('게임에 접속할 수 없습니다. 다시 시도해주세요.', 'error');
+            });
+    }
+});
 
 
         // 방 생성 (호스트 비밀번호 필요)
