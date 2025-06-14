@@ -1475,203 +1475,205 @@ function updateBingoCellClickability() {
 }
 
 
-        // 빙고 가능 여부 (버튼 활성화) 확인 및 UI 업데이트
-        function checkBingoPossibility() {
-            const board = gameState.bingoBoard;
-            const size = gameState.boardSize;
-            const requiredLines = gameState.winCondition;
-            let completedLines = 0;
-            const bingoButton = document.getElementById('bingo-button');
-            const turnEndButton = document.getElementById('turn-end-button');
-            const currentPlayerUid = gameState.playerList[gameState.currentTurn]; // 현재 턴 플레이어의 UID
-            const isMyTurn = currentPlayerUid === gameState.playerUID; // 내 UID와 현재 턴 UID 비교
+// 빙고 가능 여부 (버튼 활성화) 확인 및 UI 업데이트
+function checkBingoPossibility() {
+    const board = gameState.bingoBoard;
+    const size = gameState.boardSize;
+    const requiredLines = gameState.winCondition;
+    let completedLines = 0;
+    const bingoButton = document.getElementById('bingo-button');
+    const turnEndButton = document.getElementById('turn-end-button');
+    const currentPlayerUid = gameState.playerList[gameState.currentTurn]; // 현재 턴 플레이어의 UID
+    const isMyTurn = currentPlayerUid === gameState.playerUID; // 내 UID와 현재 턴 UID 비교
 
-            // 게임 시작 전이거나 방 레퍼런스가 없으면 버튼 비활성화 (보이기는 함)
-            if (!gameState.gameStarted || !gameState.roomRef) {
-                gameState.canClaimBingo = false;
-                bingoButton.disabled = true;
-                turnEndButton.disabled = true;
-                return;
-            }
+    // 게임 시작 전이거나 방 레퍼런스가 없으면 버튼 비활성화 (보이기는 함)
+    if (!gameState.gameStarted || !gameState.roomRef) {
+        gameState.canClaimBingo = false;
+        bingoButton.disabled = true;
+        turnEndButton.disabled = true;
+        return;
+    }
 
-            // Firebase에서 최신 게임 상태 (gameEnded, winner)를 가져옴
-            gameState.roomRef.once('value').then(snapshot => {
-                const roomData = snapshot.val();
-                if (!roomData) return;
+    // Firebase에서 최신 게임 상태 (gameEnded, winner)를 가져옴
+    gameState.roomRef.once('value').then(snapshot => {
+        const roomData = snapshot.val();
+        if (!roomData) return;
 
-                // 게임이 이미 종료되었거나 승자가 있다면 버튼 비활성화
-                if (roomData.gameEnded || roomData.winner) {
-                    bingoButton.disabled = true;
-                    turnEndButton.disabled = true;
-                    bingoButton.style.display = 'none';
-                    turnEndButton.style.display = 'none';
-                    return;
-                } else {
-                    bingoButton.style.display = 'block';
-                    turnEndButton.style.display = 'block';
-                }
-
-                // 빙고 라인 체크 ('flipped' 상태만 인정)
-                for (let i = 0; i < size; i++) {
-                    let rowComplete = true;
-                    for (let j = 0; j < size; j++) {
-                        const index = i * size + j;
-                        // 나의 로컬 빙고 보드 상태를 참조하여 'flipped'인지 확인
-                        // roomData.players[gameState.playerUID]로 내 데이터를 가져옴
-                        if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
-                            rowComplete = false;
-                            break;
-                        }
-                    }
-                    if (rowComplete) completedLines++;
-                }
-
-                for (let j = 0; j < size; j++) {
-                    let colComplete = true;
-                    for (let i = 0; i < size; i++) {
-                        const index = i * size + j;
-                        if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
-                            colComplete = false;
-                            break;
-                        }
-                    }
-                    if (colComplete) completedLines++;
-                }
-
-                let diag1Complete = true;
-                for (let i = 0; i < size; i++) {
-                    const index = i * size + i;
-                    if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
-                        diag1Complete = false;
-                        break;
-                    }
-                }
-                if (diag1Complete) completedLines++;
-
-                let diag2Complete = true;
-                for (let i = 0; i < size; i++) {
-                    const index = i * size + (size - 1 - i);
-                    if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
-                        diag2Complete = false;
-                        break;
-                    }
-                }
-                if (diag2Complete) completedLines++;
-                
-                console.log(`${gameState.playerName}: 현재 완성된 라인 수 (실패 제외) = ${completedLines}`);
-
-                // --- 빙고 버튼 활성화/비활성화 로직 ---
-                if (completedLines >= requiredLines) {
-                    gameState.canClaimBingo = true;
-                    // 내 턴이고, 게임이 아직 종료되지 않았고, 승자가 없을 때만 빙고 버튼 활성화
-                    bingoButton.disabled = !isMyTurn || roomData.gameEnded || roomData.winner;
-                } else {
-                    gameState.canClaimBingo = false;
-                    bingoButton.disabled = true;
-                }
-
-                // --- 턴 종료 버튼 활성화/비활성화 로직 ---
-                // 내 턴이고, 게임이 아직 종료되지 않았으며, 승자가 없고, 현재 턴에 최소 한 번 셀을 클릭했다면 활성화
-                turnEndButton.disabled = !isMyTurn || roomData.gameEnded || roomData.winner || !gameState.hasMadeMoveInTurn;
-
-            }).catch(error => {
-                console.error("Error checking bingo possibility:", error);
-                showMessage("빙고/턴 상태 확인 중 오류 발생!", "error");
-                bingoButton.disabled = true;
-                turnEndButton.disabled = true;
-            });
+        // 게임이 이미 종료되었거나 승자가 있다면 버튼 비활성화
+        if (roomData.gameEnded || roomData.winner) {
+            bingoButton.disabled = true;
+            turnEndButton.disabled = true;
+            bingoButton.style.display = 'none';
+            turnEndButton.style.display = 'none';
+            return;
+        } else {
+            bingoButton.style.display = 'block';
+            turnEndButton.style.display = 'block';
         }
 
-        // 턴 종료 버튼 클릭 시 호출
-        async function turnEnd() {
-            const currentPlayerUid = gameState.playerList[gameState.currentTurn];
-            if (currentPlayerUid !== gameState.playerUID) { // 내 UID와 현재 턴 UID 비교
-                showMessage('당신의 차례가 아닙니다!', 'error');
-                return;
+        // 빙고 라인 체크 ('flipped' 상태만 인정)
+        for (let i = 0; i < size; i++) {
+            let rowComplete = true;
+            for (let j = 0; j < size; j++) {
+                const index = i * size + j;
+                // 나의 로컬 빙고 보드 상태를 참조하여 'flipped'인지 확인
+                // roomData.players[gameState.playerUID]로 내 데이터를 가져옴
+                if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
+                    rowComplete = false;
+                    break;
+                }
             }
-
-            const roomSnapshot = await gameState.roomRef.once('value');
-            const roomData = roomSnapshot.val();
-
-            if (roomData.gameEnded || roomData.winner) {
-                showMessage('게임은 이미 종료되었습니다!', 'error');
-                return;
-            }
-
-            if (!gameState.hasMadeMoveInTurn) { // 셀을 클릭하지 않았으면 턴 종료 불가
-                showMessage('셀을 하나라도 뒤집어야 턴을 종료할 수 있습니다!', 'error');
-                return;
-            }
-
-            try {
-                // 다음 턴으로 넘김
-                const nextTurn = (gameState.currentTurn + 1) % gameState.playerList.length;
-                await gameState.roomRef.update({
-                    currentTurn: nextTurn
-                });
-                showMessage('턴을 종료했습니다.', 'info');
-                gameState.hasMadeMoveInTurn = false; // 턴 종료 시 상태 초기화
-                // 턴 종료 시 버튼 비활성화 (새로운 턴 주인이 UI 업데이트 하면서 다시 활성화될 것)
-                document.getElementById('turn-end-button').disabled = true;
-                document.getElementById('bingo-button').disabled = true;
-            } catch (error) {
-                showMessage('턴 종료에 실패했습니다: ' + error.message, 'error');
-                console.error('Turn End Error:', error);
-            }
+            if (rowComplete) completedLines++;
         }
 
+        for (let j = 0; j < size; j++) {
+            let colComplete = true;
+            for (let i = 0; i < size; i++) {
+                const index = i * size + j;
+                if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
+                    colComplete = false;
+                    break;
+                }
+            }
+            if (colComplete) completedLines++;
+        }
+
+        let diag1Complete = true;
+        for (let i = 0; i < size; i++) {
+            const index = i * size + i;
+            if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
+                diag1Complete = false;
+                break;
+            }
+        }
+        if (diag1Complete) completedLines++;
+
+        let diag2Complete = true;
+        for (let i = 0; i < size; i++) {
+            const index = i * size + (size - 1 - i);
+            if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
+                diag2Complete = false;
+                break;
+            }
+        }
+        if (diag2Complete) completedLines++;
+        
+        console.log(`${gameState.playerName}: 현재 완성된 라인 수 (실패 제외) = ${completedLines}`);
+
+        // --- 빙고 버튼 활성화/비활성화 로직 ---
+        if (completedLines >= requiredLines) {
+            gameState.canClaimBingo = true;
+            // 내 턴이고, 게임이 아직 종료되지 않았고, 승자가 없을 때만 빙고 버튼 활성화
+            bingoButton.disabled = !isMyTurn || roomData.gameEnded || roomData.winner;
+        } else {
+            gameState.canClaimBingo = false;
+            bingoButton.disabled = true;
+        }
+
+        // --- 턴 종료 버튼 활성화/비활성화 로직 ---
+        // 내 턴이고, 게임이 아직 종료되지 않았으며, 승자가 없고, 현재 턴에 최소 한 번 셀을 클릭했다면 활성화
+        turnEndButton.disabled = !isMyTurn || roomData.gameEnded || roomData.winner || !gameState.hasMadeMoveInTurn;
+
+    }).catch(error => {
+        console.error("Error checking bingo possibility:", error);
+        showMessage("빙고/턴 상태 확인 중 오류 발생!", "error");
+        bingoButton.disabled = true;
+        turnEndButton.disabled = true;
+    });
+}
+
+      // 턴 종료 버튼 클릭 시 호출
+async function turnEnd() {
+    const currentPlayerUid = gameState.playerList[gameState.currentTurn];
+    if (currentPlayerUid !== gameState.playerUID) { // 내 UID와 현재 턴 UID 비교
+        showMessage('당신의 차례가 아닙니다!', 'error');
+        return;
+    }
+
+    const roomSnapshot = await gameState.roomRef.once('value');
+    const roomData = roomSnapshot.val();
+
+    if (roomData.gameEnded || roomData.winner) {
+        showMessage('게임은 이미 종료되었습니다!', 'error');
+        return;
+    }
+
+    if (!gameState.hasMadeMoveInTurn) { // 셀을 클릭하지 않았으면 턴 종료 불가
+        showMessage('셀을 하나라도 뒤집어야 턴을 종료할 수 있습니다!', 'error');
+        return;
+    }
+
+    try {
+        // 다음 턴으로 넘김
+        const nextTurn = (gameState.currentTurn + 1) % gameState.playerList.length;
+        await gameState.roomRef.update({
+            currentTurn: nextTurn
+        });
+        showMessage('턴을 종료했습니다.', 'info');
+        gameState.hasMadeMoveInTurn = false; // 턴 종료 시 상태 초기화
+        // 턴 종료 시 버튼 비활성화 (새로운 턴 주인이 UI 업데이트 하면서 다시 활성화될 것)
+        document.getElementById('turn-end-button').disabled = true;
+        document.getElementById('bingo-button').disabled = true;
+    } catch (error) {
+        showMessage('턴 종료에 실패했습니다: ' + error.message, 'error');
+        console.error('Turn End Error:', error);
+    }
+}
+
+        
         // 빙고 버튼 클릭 시 승리 주장
-        async function claimBingo() {
-            if (!gameState.canClaimBingo) {
-                showMessage('빙고를 주장할 수 없습니다. 조건을 다시 확인하세요!', 'error');
-                return;
-            }
-            
-            const roomSnapshot = await gameState.roomRef.once('value');
-            const roomData = roomSnapshot.val();
+async function claimBingo() {
+    if (!gameState.canClaimBingo) {
+        showMessage('빙고를 주장할 수 없습니다. 조건을 다시 확인하세요!', 'error');
+        return;
+    }
+    
+    const roomSnapshot = await gameState.roomRef.once('value');
+    const roomData = roomSnapshot.val();
 
-            if (roomData.gameEnded || roomData.winner) {
-                showMessage('게임은 이미 종료되었거나 승자가 결정되었습니다!', 'error');
-                return;
-            }
-            
-            if (roomData.bingoClaimed) {
-                showMessage('다른 플레이어가 이미 빙고를 주장했습니다!', 'error');
-                return;
-            }
+    if (roomData.gameEnded || roomData.winner) {
+        showMessage('게임은 이미 종료되었습니다!', 'error');
+        return;
+    }
+    
+    if (roomData.bingoClaimed) {
+        showMessage('다른 플레이어가 이미 빙고를 주장했습니다!', 'error');
+        return;
+    }
 
-            try {
-                const result = await gameState.roomRef.child('bingoClaimed').transaction((currentClaim) => {
-                    if (currentClaim === null) { // 아직 빙고를 주장한 사람이 없다면
-                        return {
-                            claimerUid: gameState.playerUID, // UID 저장
-                            claimerName: gameState.playerName, // 닉네임도 함께 저장 (표시용)
-                            timestamp: firebase.database.ServerValue.TIMESTAMP
-                        };
-                    } else {
-                        return undefined; // 이미 주장한 사람이 있다면 트랜잭션 취소
-                    }
-                });
-
-                if (result.committed) { // 트랜잭션 성공 (내가 빙고 주장 선점 성공)
-                    await gameState.roomRef.update({
-                        winner: gameState.playerName, // UI 표시용 닉네임
-                        winnerUid: gameState.playerUID, // 실제 승자의 UID
-                        gameEnded: true,
-                        endedAt: firebase.database.ServerValue.TIMESTAMP
-                    });
-                    showMessage('🎉 빙고를 주장했습니다! 당신이 승리합니다!', 'success');
-                } else { // 트랜잭션 실패 (다른 사람이 먼저 주장함)
-                    showMessage('앗! 다른 플레이어가 먼저 빙고를 주장했습니다!', 'error');
-                }
-                document.getElementById('bingo-button').disabled = true;
-                document.getElementById('bingo-button').style.display = 'none';
-                document.getElementById('turn-end-button').style.display = 'none';
-            } catch (error) {
-                showMessage('빙고 주장 중 오류가 발생했습니다: ' + error.message, 'error');
-                console.error('Claim Bingo Error:', error);
+    try {
+        const result = await gameState.roomRef.child('bingoClaimed').transaction((currentClaim) => {
+            if (currentClaim === null) { // 아직 빙고를 주장한 사람이 없다면
+                return {
+                    claimerUid: gameState.playerUID, // UID 저장
+                    claimerName: gameState.playerName, // 닉네임도 함께 저장 (표시용)
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                };
+            } else {
+                return undefined; // 이미 주장한 사람이 있다면 트랜잭션 취소
             }
+        });
+
+        if (result.committed) { // 트랜잭션 성공 (내가 빙고 주장 선점 성공)
+            await gameState.roomRef.update({
+                winner: gameState.playerName, // UI 표시용 닉네임
+                winnerUid: gameState.playerUID, // 실제 승자의 UID
+                gameEnded: true,
+                endedAt: firebase.database.ServerValue.TIMESTAMP
+            });
+            showMessage('🎉 빙고를 주장했습니다! 당신이 승리합니다!', 'success');
+        } else { // 트랜잭션 실패 (다른 사람이 먼저 주장함)
+            showMessage('앗! 다른 플레이어가 먼저 빙고를 주장했습니다!', 'error');
         }
+        document.getElementById('bingo-button').disabled = true;
+        document.getElementById('bingo-button').style.display = 'none';
+        document.getElementById('turn-end-button').style.display = 'none';
+    } catch (error) {
+        showMessage('빙고 주장 중 오류가 발생했습니다: ' + error.message, 'error');
+        console.error('Claim Bingo Error:', error);
+    }
+}
+        
 
         // 승리 메시지 표시 팝업
         function displayWinnerMessage(winnerName, winCondition) {
@@ -1707,85 +1709,110 @@ function updateBingoCellClickability() {
         }
 
         // 설정 화면으로 돌아가기 (모든 게임 상태 및 UI 초기화)
-        function backToSetup() {
-            document.getElementById('game-setup').style.display = 'block';
-            document.getElementById('game-area').style.display = 'none';
-            
-            if (gameState.roomRef && gameState.playerUID) { // playerUID가 있을 때만
-                gameState.roomRef.off();
-                // 자신의 플레이어 정보만 삭제
-                // 호스트 여부에 상관없이 자신의 UID 노드만 삭제합니다.
-                gameState.roomRef.child('players').child(gameState.playerUID).remove();
-                // playerOrderUids 배열에서도 자신의 UID를 삭제 (방장만 할 수 있도록 규칙 설정 필요)
-                // 만약 이 방을 만든 호스트가 나가서 플레이어가 0명이 되면 방 전체를 삭제하는 로직도 고려할 수 있습니다.
-                // 현재는 단순히 플레이어 노드만 삭제.
-                console.log(`플레이어 ${gameState.playerName}이(가) 방을 나갑니다. UID: ${gameState.playerUID}`);
+function backToSetup() {
+    document.getElementById('game-setup').style.display = 'block';
+    document.getElementById('game-area').style.display = 'none';
+    
+    if (gameState.roomRef && gameState.playerUID) { // playerUID가 있을 때만
+        gameState.roomRef.off();
+        // 자신의 플레이어 정보만 삭제
+        gameState.roomRef.child('players').child(gameState.playerUID).remove();
+        console.log(`플레이어 ${gameState.playerName}이(가) 방을 나갑니다. UID: ${gameState.playerUID}`);
+        
+        // playerOrderUids에서 자신의 UID 삭제 (트랜잭션 사용)
+        // 이 부분은 방장만 할 수 있도록 규칙 설정이 필요합니다.
+        // 현재는 규칙에서 제한하지 않으므로 클라이언트에서 시도해 볼 수 있습니다.
+        // 하지만 안전하게 하려면 Cloud Functions 같은 서버 로직이 필요합니다.
+        // 일단은 클라이언트에서만 시도하도록 둡니다 (규칙에 의해 거부될 수 있음).
+        gameState.roomRef.child('playerOrderUids').transaction((currentUids) => {
+            if (currentUids) {
+                const updatedUids = currentUids.filter(uid => uid !== gameState.playerUID);
+                if (updatedUids.length === 0) {
+                    // 마지막 플레이어가 나갈 때 방 자체를 삭제 (옵션)
+                    // gameState.roomRef.remove();
+                    return null; // 배열이 비었으면 null로 만들어 노드 삭제 (또는 빈 배열로 유지)
+                }
+                return updatedUids;
             }
-            
-            // gameState 객체 초기화 (playerUID는 재사용될 수 있으므로 그대로 둡니다)
-            gameState = {
-                isHost: false,
-                roomCode: '',
-                playerName: '',
-                playerUID: gameState.playerUID, // UID는 유지
-                players: {},
-                missions: [],
-                winCondition: 1,
-                boardSize: 3,
-                maxPlayers: 2,
-                gameStarted: false,
-                bingoBoard: [],
-                currentTurn: 0,
-                playerList: [], // 이 playerList는 이제 UID 목록이므로, 초기화 시 빈 배열
-                roomRef: null,
-                missionMap: {},
-                canClaimBingo: false,
-                flippedNumbers: [],
-                hasMadeMoveInTurn: false
-            };
-            
-            // UI 요소들을 초기 상태로 재설정
-            document.getElementById('players-list').innerHTML = '<div class="loading">방에 입장하면 참가자가 표시됩니다</div>';
-            document.getElementById('missions-list').innerHTML = `<div style="text-align: center; color: #a0aec0; padding: 20px;">미션을 추가해주세요 (최소 ${gameState.boardSize * gameState.boardSize}개 필요)</div>`;
-            document.getElementById('current-mission-count').textContent = '현재 등록된 미션: 0개';
-            document.getElementById('share-section').classList.add('hidden');
-            document.getElementById('join-room-section').classList.add('hidden');
-            document.getElementById('auto-join-hint').classList.add('hidden');
-            
-            // '새 방 만들기'와 '방 입장하기' 버튼 그룹을 다시 보이게 함
-            document.getElementById('create-room-btn').classList.remove('hidden-by-url-param');
-            document.getElementById('max-players-create-group').classList.remove('hidden-by-url-param');
-            document.getElementById('main-action-buttons').classList.remove('hidden-by-url-param');
+            return currentUids;
+        }).catch(error => console.error("Failed to remove UID from playerOrderUids:", error));
+    }
+    
+    // gameState 객체 초기화 (playerUID는 재사용될 수 있으므로 그대로 둡니다)
+    gameState = {
+        isHost: false,
+        roomCode: '',
+        playerName: '',
+        playerUID: gameState.playerUID, // UID는 유지
+        players: {},
+        missions: [],
+        winCondition: 1,
+        boardSize: 3,
+        maxPlayers: 2,
+        gameStarted: false,
+        bingoBoard: [],
+        currentTurn: 0,
+        playerList: [], // 이 playerList는 이제 UID 목록이므로, 초기화 시 빈 배열
+        roomRef: null,
+        missionMap: {},
+        canClaimBingo: false,
+        flippedNumbers: [],
+        hasMadeMoveInTurn: false
+    };
+    
+    // UI 요소들을 초기 상태로 재설정
+    document.getElementById('players-list').innerHTML = '<div class="loading">방에 입장하면 참가자가 표시됩니다</div>';
+    document.getElementById('missions-list').innerHTML = `<div style="text-align: center; color: #a0aec0; padding: 20px;">미션을 추가해주세요 (최소 ${gameState.boardSize * gameState.boardSize}개 필요)</div>`;
+    document.getElementById('current-mission-count').textContent = '현재 등록된 미션: 0개';
+    document.getElementById('share-section').classList.add('hidden');
+    document.getElementById('join-room-section').classList.add('hidden');
+    document.getElementById('auto-join-hint').classList.add('hidden');
+    
+    // '새 방 만들기'와 '방 입장하기' 버튼 그룹을 다시 보이게 함
+    document.getElementById('create-room-btn').classList.remove('hidden-by-url-param');
+    document.getElementById('max-players-create-group').classList.remove('hidden-by-url-param');
+    document.getElementById('main-action-buttons').classList.remove('hidden-by-url-param');
 
-            document.getElementById('room-code').readOnly = false; // 방 코드 수정 가능하게
-            
-            document.getElementById('first-player-section').classList.add('hidden');
-            document.getElementById('player-name').value = '';
-            document.getElementById('room-code').value = '';
-            document.getElementById('bingo-button').style.display = 'block'; // 버튼은 항상 보이게
-            document.getElementById('bingo-button').disabled = true;
-            document.getElementById('turn-end-button').style.display = 'block'; // 버튼은 항상 보이게
-            document.getElementById('turn-end-button').disabled = true;
-            
-            // 승리 오버레이 제거 (혹시 이전 게임에서 남아있을 경우)
-            const winnerOverlay = document.getElementById('winner-overlay');
-            if (winnerOverlay) {
-                winnerOverlay.remove();
-            }
+    // UI를 다시 비활성화하고 "로그인 중" 상태로
+    document.getElementById('player-name').value = '';
+    document.getElementById('player-name').disabled = true; // disabled 상태로
+    document.getElementById('player-name').placeholder = "로그인 중..."; // placeholder 변경
+    document.getElementById('create-room-btn').disabled = true; // disabled 상태로
+    document.getElementById('show-join-room-btn').disabled = true; // disabled 상태로
+    document.querySelector('.create-room-controls').style.pointerEvents = 'none';
+    document.querySelector('.create-room-controls').style.opacity = '0.5';
+    document.getElementById('main-action-buttons').style.pointerEvents = 'none';
+    document.getElementById('main-action-buttons').style.opacity = '0.5';
+    
+    document.getElementById('room-code').readOnly = false;
+    document.getElementById('room-code').value = '';
+    
+    document.getElementById('first-player-section').classList.add('hidden');
+    document.getElementById('bingo-button').style.display = 'block';
+    document.getElementById('bingo-button').disabled = true;
+    document.getElementById('turn-end-button').style.display = 'block';
+    document.getElementById('turn-end-button').disabled = true;
+    
+    // 승리 오버레이 제거 (혹시 이전 게임에서 남아있을 경우)
+    const winnerOverlay = document.getElementById('winner-overlay');
+    if (winnerOverlay) {
+        winnerOverlay.remove();
+    }
 
-            // 빙고판 크기, 승리 조건, 최대 플레이어 수 UI를 기본값으로 재설정
-            document.getElementById('size-3').checked = true;
-            document.getElementById('win-1').checked = true;
-            document.getElementById('max-players-create').value = 2; // 새로 추가된 드롭다운 초기화
+    // 빙고판 크기, 승리 조건, 최대 플레이어 수 UI를 기본값으로 재설정
+    document.getElementById('size-3').checked = true;
+    document.getElementById('win-1').checked = true;
+    document.getElementById('max-players-create').value = 2;
 
-            document.getElementById('flipped-numbers-count').textContent = '0'; // 공통 미션 개수 초기화
+    document.getElementById('flipped-numbers-count').textContent = '0';
 
-            // 'game-options-section'이 다시 보이도록 설정
-            document.getElementById('game-options-section').classList.remove('hidden');
+    // 'game-options-section'이 다시 보이도록 설정
+    document.getElementById('game-options-section').classList.remove('hidden');
 
-            // 설정 화면으로 돌아올 때 저장된 미션을 자동으로 불러옴
-            loadMissions();
-        }
+    // 설정 화면으로 돌아올 때 저장된 미션을 자동으로 불러옴
+    loadMissions();
+}
+        
 
         // 6자리 랜덤 방 코드 생성
         function generateRoomCode() {
@@ -1885,94 +1912,96 @@ function updateBingoCellClickability() {
         }
 
         // 셀 뒤집기 (3단계 상태 변경: unflipped -> flipped -> failed -> unflipped)
-        async function flipCell(index) {
-            const roomSnapshot = await gameState.roomRef.once('value');
-            const roomData = roomSnapshot.val();
-            
-            if (roomData.gameEnded || roomData.winner) {
-                showMessage('게임이 이미 종료되었거나 승자가 결정되었습니다!', 'error');
-                return;
-            }
-            
-            const selectedNumber = gameState.bingoBoard[index].number;
-            const missionToAssign = gameState.bingoBoard[index].mission;
-            const currentPlayerUidInRoom = gameState.playerList[gameState.currentTurn]; // 현재 턴인 플레이어의 UID
-            const isMyTurn = gameState.playerUID === currentPlayerUidInRoom; // 내 UID와 현재 턴의 UID 비교
+async function flipCell(index) {
+    const roomSnapshot = await gameState.roomRef.once('value');
+    const roomData = roomSnapshot.val();
+    
+    if (roomData.gameEnded || roomData.winner) {
+        showMessage('게임이 이미 종료되었거나 승자가 결정되었습니다!', 'error');
+        return;
+    }
+    
+    const selectedNumber = gameState.bingoBoard[index].number;
+    const missionToAssign = gameState.bingoBoard[index].mission;
+    const currentPlayerUidInRoom = gameState.playerList[gameState.currentTurn]; // 현재 턴인 플레이어의 UID
+    const isMyTurn = gameState.playerUID === currentPlayerUidInRoom; // 내 UID와 현재 턴의 UID 비교
 
-            try {
-                const isFlippedCommon = gameState.flippedNumbers.includes(selectedNumber);
-                // 나의 현재 셀 상태 (UID 기반으로 접근)
-                const myCurrentState = roomData.players[gameState.playerUID]?.boardState?.[selectedNumber]?.state || 'unflipped';
+    try {
+        const isFlippedCommon = gameState.flippedNumbers.includes(selectedNumber);
+        // 나의 현재 셀 상태 (UID 기반으로 접근)
+        const myCurrentState = roomData.players[gameState.playerUID]?.boardState?.[selectedNumber]?.state || 'unflipped';
 
-                // 1단계: (내 턴일 때만) 공통으로 뒤집을 숫자를 선택/등록
-                if (!isFlippedCommon) {
-                    if (isMyTurn) {
-                        if (gameState.hasMadeMoveInTurn) {
-                            showMessage('한 턴에 하나의 숫자만 뒤집을 수 있습니다!', 'error');
-                            return;
-                        }
-
-                        const flippedResult = await gameState.roomRef.child('flippedNumbers').child(selectedNumber).transaction((currentValue) => {
-                            if (currentValue === null) {
-                                return true;
-                            }
-                            return undefined;
-                        });
-
-                        if (!flippedResult.committed) {
-                            showMessage('이미 다른 플레이어가 이 숫자를 뒤집었거나 문제가 발생했습니다.', 'error');
-                            return;
-                        }
-                        gameState.hasMadeMoveInTurn = true;
-                    } else {
-                        const currentPlayerNameForMsg = gameState.players[currentPlayerUidInRoom]?.name || '알 수 없는 플레이어';
-                        showMessage(`${currentPlayerNameForMsg}의 차례입니다. 새로운 숫자를 선택할 수 없습니다!`, 'error');
-                        return;
-                    }
+        // 1단계: (내 턴일 때만) 공통으로 뒤집을 숫자를 선택/등록
+        if (!isFlippedCommon) {
+            if (isMyTurn) {
+                if (gameState.hasMadeMoveInTurn) {
+                    showMessage('한 턴에 하나의 숫자만 뒤집을 수 있습니다!', 'error');
+                    return;
                 }
 
-                // 2단계: 개별 플레이어의 빙고판 상태를 변경 (공통으로 뒤집힌 숫자라면 누구나 가능)
-                // 자신의 boardState는 이제 gameState.playerUID 아래에 저장됨
-                const myBoardStateRef = gameState.roomRef.child(`players/${gameState.playerUID}/boardState/${selectedNumber}`);
-                
-                const boardStateResult = await myBoardStateRef.transaction((currentMyStateData) => {
-                    let stateForMeInFirebase = currentMyStateData ? currentMyStateData.state : 'unflipped';
-                    let nextStateForMe;
-
-                    if (isFlippedCommon) {
-                        if (stateForMeInFirebase === 'flipped') {
-                            nextStateForMe = 'failed';
-                        } else if (stateForMeInFirebase === 'failed') {
-                            nextStateForMe = 'flipped';
-                        } else {
-                            nextStateForMe = 'flipped';
-                        }
-                    } else { // 공통으로 뒤집히지 않은 숫자 (내 턴에 내가 처음 뒤집는 경우 또는 실패를 되돌리는 경우)
-                        if (stateForMeInFirebase === 'unflipped') {
-                            nextStateForMe = 'flipped'; // 내가 처음 뒤집는 경우
-                        } else if (stateForMeInFirebase === 'failed') {
-                            nextStateForMe = 'unflipped'; // 잘못 클릭해서 실패 처리된 것을 되돌림
-                        } else { // flipped 상태인데 공통으로 뒤집히지 않은 경우 (오류 방지)
-                            return undefined;
-                        }
+                const flippedResult = await gameState.roomRef.child('flippedNumbers').child(selectedNumber).transaction((currentValue) => {
+                    if (currentValue === null) {
+                        return true;
                     }
-                    
-                    return {
-                        state: nextStateForMe,
-                        mission: missionToAssign,
-                        changedAt: firebase.database.ServerValue.TIMESTAMP
-                    };
+                    return undefined;
                 });
 
-                if (!boardStateResult.committed) {
-                    showMessage('내 빙고판 칸 상태 변경 중 오류가 발생했습니다. 다시 시도해주세요!', 'error');
+                if (!flippedResult.committed) {
+                    showMessage('이미 다른 플레이어가 이 숫자를 뒤집었거나 문제가 발생했습니다.', 'error');
+                    return;
                 }
-                
-            } catch (error) {
-                showMessage('셀 업데이트에 실패했습니다: ' + error.message, 'error');
-                console.error('Firebase Transaction Error:', error);
+                gameState.hasMadeMoveInTurn = true;
+            } else {
+                const currentPlayerNameForMsg = gameState.players[currentPlayerUidInRoom]?.name || '알 수 없는 플레이어';
+                showMessage(`${currentPlayerNameForMsg}의 차례입니다. 새로운 숫자를 선택할 수 없습니다!`, 'error');
+                return;
             }
         }
+
+        // 2단계: 개별 플레이어의 빙고판 상태를 변경 (공통으로 뒤집힌 숫자라면 누구나 가능)
+        // 자신의 boardState는 이제 gameState.playerUID 아래에 저장됨
+        const myBoardStateRef = gameState.roomRef.child(`players/${gameState.playerUID}/boardState/${selectedNumber}`);
+        
+        const boardStateResult = await myBoardStateRef.transaction((currentMyStateData) => {
+            let stateForMeInFirebase = currentMyStateData ? currentMyStateData.state : 'unflipped';
+            let nextStateForMe;
+
+            if (isFlippedCommon) {
+                if (stateForMeInFirebase === 'flipped') {
+                    nextStateForMe = 'failed';
+                } else if (stateForMeInFirebase === 'failed') {
+                    nextStateForMe = 'flipped';
+                } else {
+                    nextStateForMe = 'flipped';
+                }
+            } else { // 공통으로 뒤집히지 않은 숫자 (내 턴에 내가 처음 뒤집는 경우 또는 실패를 되돌리는 경우)
+                if (stateForMeInFirebase === 'unflipped') {
+                    nextStateForMe = 'flipped'; // 내가 처음 뒤집는 경우
+                } else if (stateForMeInFirebase === 'failed') {
+                    nextStateForMe = 'unflipped'; // 잘못 클릭해서 실패 처리된 것을 되돌림
+                } else { // flipped 상태인데 공통으로 뒤집히지 않은 경우 (오류 방지)
+                    return undefined;
+                }
+            }
+            
+            return {
+                state: nextStateForMe,
+                mission: missionToAssign,
+                changedAt: firebase.database.ServerValue.TIMESTAMP
+            };
+        });
+
+        if (!boardStateResult.committed) {
+            showMessage('내 빙고판 칸 상태 변경 중 오류가 발생했습니다. 다시 시도해주세요!', 'error');
+        }
+        
+    } catch (error) {
+        showMessage('셀 업데이트에 실패했습니다: ' + error.message, 'error');
+        console.error('Firebase Transaction Error:', error);
+    }
+}
+
+        
 
         // 공유 링크 복사 (Clipboard API 사용)
         function copyShareLink() {
@@ -2120,17 +2149,27 @@ function updateBingoCellClickability() {
         });
 
         // 페이지 이탈 시 Firebase 리스너 정리 및 플레이어 정보 삭제
-        window.addEventListener('beforeunload', async function() {
-            // playerUID가 설정되어 있을 때만 실행
-            if (gameState.roomRef && gameState.playerUID) {
-                gameState.roomRef.off(); // 방을 떠날 때 Firebase 리스너 해제
-                // 자신의 플레이어 정보만 삭제
-                // 호스트 여부에 상관없이 자신의 UID 노드만 삭제합니다.
-                await gameState.roomRef.child('players').child(gameState.playerUID).remove();
-                console.log(`플레이어 ${gameState.playerName}이(가) 방을 나갑니다. UID: ${gameState.playerUID}`);
-            }
-        });
+window.addEventListener('beforeunload', async function() {
+    // playerUID가 설정되어 있을 때만 실행
+    if (gameState.roomRef && gameState.playerUID) {
+        gameState.roomRef.off(); // 방을 떠날 때 Firebase 리스너 해제
+        // 자신의 플레이어 정보만 삭제
+        await gameState.roomRef.child('players').child(gameState.playerUID).remove();
+        console.log(`플레이어 ${gameState.playerName}이(가) 방을 나갑니다. UID: ${gameState.playerUID}`);
 
+        // playerOrderUids에서 자신의 UID 삭제 (트랜잭션 사용)
+        // 이 부분은 규칙에 의해 거부될 수 있습니다. (write 권한이 방장에게만 있기 때문)
+        // 하지만 클라이언트에서 시도는 해볼 수 있도록 둡니다.
+        // 만약 마지막 플레이어가 나가고 방이 비어야 한다면, Cloud Functions가 더 적합합니다.
+        gameState.roomRef.child('playerOrderUids').transaction((currentUids) => {
+            if (currentUids) {
+                const updatedUids = currentUids.filter(uid => uid !== gameState.playerUID);
+                return updatedUids.length > 0 ? updatedUids : null; // 배열이 비면 null로 만들어 노드 삭제
+            }
+            return currentUids;
+        }).catch(error => console.error("Failed to remove UID from playerOrderUids on unload:", error));
+    }
+});
         // URL 파라미터 확인 및 자동 입장 로직 시작 (HTML 파싱 직후 즉시 실행 시도)
         // 이 함수는 이제 onAuthStateChanged 콜백 안에서 호출됩니다.
         // checkURLParams(); // <-- 이 줄은 삭제합니다.
