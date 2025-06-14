@@ -562,7 +562,7 @@
             <h1>🎯 밈주머니 빙고 게임!</h1>
             <p>밈주머니와 함께 즐기는 쐐기 빙고!</p>
             <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
-                v4.71 - 보안 시스템 업데이트
+                v4.7 - 미션 세이브/로드 시스템 추가
             </div>
         </div>
 
@@ -678,8 +678,7 @@
             </div>
 
             <div style="text-align: center;">
-                <button class="btn btn-primary" id="start-game-btn" onclick="startGame()" style="font-size: 18px; padding: 15px 30px;">
-                    🎮 게임 시작!
+                <button class="btn btn-primary" id="start-game-btn" disabled> 🎮 게임 시작!
                 </button>
             </div>
         </div>
@@ -695,17 +694,14 @@
                 </div>
             
             <div class="game-buttons">
-                <button id="bingo-button" onclick="claimBingo()" class="btn btn-primary" disabled>
-                    🎉 빙고!
+                <button id="bingo-button" class="btn btn-primary" disabled> 🎉 빙고!
                 </button>
-                <button id="turn-end-button" onclick="turnEnd()" class="btn btn-secondary" disabled>
-                    ➡️ 턴 종료
+                <button id="turn-end-button" class="btn btn-secondary" disabled> ➡️ 턴 종료
                 </button>
             </div>
 
             <div style="text-align: center; margin-top: 20px;">
-                <button class="btn btn-secondary" onclick="backToSetup()">게임 설정으로 돌아가기</button>
-            </div>
+                <button class="btn btn-secondary" id="back-to-setup-btn">게임 설정으로 돌아가기</button> </div>
         </div>
     </div>
 
@@ -1413,7 +1409,7 @@
                     }
                 } else {
                     // 공통으로 뒤집히지 않은 숫자 (아직 아무도 선택 안 함)
-                    cellElement.textContent = cellNumber;
+                    cellElement.textContent = cellNumber; // 숫자를 다시 표시
                 }
             }
         }
@@ -1581,7 +1577,7 @@
             }
 
             const roomSnapshot = await gameState.roomRef.once('value');
-            const roomData = roomSnapshot.val();
+            const roomData = snapshot.val();
 
             if (roomData.gameEnded || roomData.winner) {
                 showMessage('게임은 이미 종료되었습니다!', 'error');
@@ -1846,9 +1842,17 @@
                 missionsList.innerHTML = gameState.missions.map((mission, index) =>
                     `<div class="mission-item">
                         <span>📌 ${mission}</span>
-                        ${gameState.isHost ? `<button class="delete-btn" onclick="deleteMission(${index})">삭제</button>` : ''}
-                    </div>`
+                        ${gameState.isHost ? `<button class="delete-btn" id="delete-mission-btn-${index}">삭제</button>` : ''} </div>`
                 ).join('');
+                // 삭제 버튼에 이벤트 리스너 다시 연결 (동적으로 생성되므로)
+                if (gameState.isHost) {
+                    document.querySelectorAll('.delete-btn').forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            const indexToDelete = parseInt(e.target.id.replace('delete-mission-btn-', ''));
+                            deleteMission(indexToDelete);
+                        });
+                    });
+                }
             }
 
             document.getElementById('current-mission-count').textContent = `현재 등록된 미션: ${gameState.missions.length}개`;
@@ -1860,18 +1864,33 @@
             const totalCells = size * size;
 
             // missionMap이 아직 로드되지 않았거나 크기가 맞지 않으면 기다림
-            if (Object.keys(gameState.missionMap).length === 0 || Object.keys(gameState.missionMap).length !== totalCells) {
-                console.warn('generateBingoBoard: Mission map is not fully loaded yet or size mismatch. Retrying in 100ms...');
-                setTimeout(generateBingoBoard, 100);
-                return;
+            if (Object.keys(gameState.missionMap).length === 0 || gameState.bingoBoard.length === 0) {
+                if (gameState.gameStarted && Object.keys(gameState.missionMap).length === totalCells) {
+                    // 이 경우에만 generateBingoBoard를 호출합니다.
+                } else if (gameState.gameStarted && Object.keys(gameState.missionMap).length === 0) {
+                    console.warn("generateBingoBoard: Waiting for missionMap to load...");
+                    setTimeout(() => generateBingoBoard(), 100); // 인자 myBoardStateData 제거
+                    return;
+                } else {
+                    return;
+                }
             }
             
             // 이미 올바른 크기의 빙고판이 생성되어 있다면 재시도하지 않음
             const bingoBoardElement = document.getElementById('bingo-board');
+            // bingoBoardElement.children.length === 0 조건은 초기 생성 시,
+            // bingoBoardElement.children.length !== totalCells 조건은 크기 변경 시 필요
             if (gameState.bingoBoard.length === totalCells && bingoBoardElement.children.length === totalCells && bingoBoardElement.classList.contains(`size-${size}`)) {
                 bingoBoardElement.className = `bingo-board size-${size}`;
+                // 기존 빙고판이 있다면 텍스트만 업데이트하도록 syncBingoBoard 호출
+                if (gameState.players[gameState.playerUID] && gameState.players[gameState.playerUID].boardState) {
+                    syncBingoBoard(gameState.players[gameState.playerUID].boardState);
+                } else {
+                    syncBingoBoard({});
+                }
                 return;
             }
+
 
             const numbers = Array.from({length: totalCells}, (_, i) => i + 1);
             const shuffledNumbers = numbers.sort(() => Math.random() - 0.5);
@@ -1886,12 +1905,13 @@
             // 빙고판 UI 업데이트
             bingoBoardElement.className = `bingo-board size-${size}`;
             bingoBoardElement.innerHTML = gameState.bingoBoard.map((cell, index) =>
-                `<div class="bingo-cell" data-index="${index}"></div>` // onclick 제거, data-index 추가, 텍스트는 syncBingoBoard에서 설정
+                `<div class="bingo-cell" data-index="${index}">${cell.number}</div>` // 숫자를 직접 표시
             ).join('');
 
             // 빙고판 생성 후 셀의 클릭 가능 여부 즉시 업데이트
             updateBingoCellClickability();
-            syncBingoBoard({}); // 빙고판 생성 후 초기 상태 동기화 (숫자 표시)
+            // syncBingoBoard({}); // 빙고판 생성 후 초기 상태 동기화 (숫자 표시) - generateBingoBoard에서 텍스트 설정하므로 제거
+                               // 또는 generateBingoBoard에서 `cell.number`가 아닌 `cell.mission`을 바로 표시하도록 변경 가능
         }
 
         // URL 파라미터 확인 및 자동 입장 로직 시작
@@ -1978,18 +1998,39 @@
 
         // --- 일반 이벤트 리스너 설정 (DOMContentLoaded 내에서 호출) ---
         document.addEventListener('DOMContentLoaded', () => {
-            // 페이지 로드 시 저장된 미션 불러오기 (첫 번째 위치)
+            // 페이지 로드 시 저장된 미션 불러오기
             loadMissions();
 
-            // '복사' 버튼에 이벤트 리스너 연결
-            const copyShareLinkBtn = document.getElementById('copy-share-link-btn');
-            if (copyShareLinkBtn) {
-                copyShareLinkBtn.addEventListener('click', copyShareLink);
-            } else {
-                console.warn("copy-share-link-btn not found. Copy button might not work.");
-            }
+            // --- 모든 버튼 및 입력 필드에 이벤트 리스너 연결 ---
+            // 방 설정 섹션 버튼들
+            document.getElementById('create-room-btn').addEventListener('click', createRoom);
+            document.getElementById('show-join-room-btn').addEventListener('click', showJoinRoom);
+            document.getElementById('join-room-btn').addEventListener('click', joinRoom);
+            document.getElementById('copy-share-link-btn').addEventListener('click', copyShareLink); // '복사' 버튼
 
-            // 빙고 셀에 이벤트 위임 (동적으로 생성되는 셀에 효과적으로 이벤트 연결)
+            // 미션 섹션 버튼들
+            document.getElementById('add-mission-btn').addEventListener('click', addMission);
+            document.getElementById('save-missions-btn').addEventListener('click', saveMissions);
+            document.getElementById('load-missions-btn').addEventListener('click', loadMissions);
+
+            // 게임 플레이 섹션 버튼들 (onclick 제거 후 여기로 이동)
+            document.getElementById('start-game-btn').addEventListener('click', startGame);
+            document.getElementById('bingo-button').addEventListener('click', claimBingo);
+            document.getElementById('turn-end-button').addEventListener('click', turnEnd);
+            document.getElementById('back-to-setup-btn').addEventListener('click', backToSetup); // id 추가된 버튼
+
+            // 입력 필드 엔터 키 이벤트 (기존 코드)
+            document.getElementById('mission-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addMission();
+                }
+            });
+
+            document.getElementById('room-code').addEventListener('input', function(e) {
+                e.target.value = e.target.value.toUpperCase();
+            });
+
+            // 빙고 셀 클릭 이벤트 (이벤트 위임)
             const bingoBoardElement = document.getElementById('bingo-board');
             if (bingoBoardElement) {
                 bingoBoardElement.addEventListener('click', (event) => {
@@ -2005,29 +2046,7 @@
                 console.warn("bingo-board not found. Bingo cells might not be clickable.");
             }
             
-            // 미션 입력 필드 엔터 키로 미션 추가 (기존 코드)
-            document.getElementById('mission-input').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    addMission();
-                }
-            });
-
-            // 방 코드 입력 대문자 변환 (기존 코드)
-            document.getElementById('room-code').addEventListener('input', function(e) {
-                e.target.value = e.target.value.toUpperCase();
-            });
-
-            // --- 모든 버튼에 이벤트 리스너 명확하게 추가 (기존 onclick 제거 후 여기로 이동) ---
-            document.getElementById('create-room-btn').addEventListener('click', createRoom);
-            document.getElementById('show-join-room-btn').addEventListener('click', showJoinRoom);
-            document.getElementById('join-room-btn').addEventListener('click', joinRoom);
-            document.getElementById('add-mission-btn').addEventListener('click', addMission);
-            document.getElementById('save-missions-btn').addEventListener('click', saveMissions);
-            document.getElementById('load-missions-btn').addEventListener('click', loadMissions);
-            // startGame, claimBingo, turnEnd, backToSetup은 HTML onclick 유지 (다른 함수들은 그대로 둠)
-            // (start-game-btn, bingo-button, turn-end-button, backToSetup)
-
-            // 빙고판 크기 선택 시 미션 최소 개수 힌트 업데이트 (3x3 고정으로 UI상으로는 영향 없음)
+            // 빙고판 크기 선택 (기존 코드)
             document.querySelectorAll('input[name="board-size"]').forEach(radio => {
                 radio.addEventListener('change', () => {
                     const newSize = parseInt(radio.value);
@@ -2040,22 +2059,15 @@
 
         // 페이지 이탈 시 Firebase 리스너 정리 및 플레이어 정보 삭제
         window.addEventListener('beforeunload', async function() {
-            // playerUID가 설정되어 있을 때만 실행
             if (gameState.roomRef && gameState.playerUID) {
-                gameState.roomRef.off(); // 방을 떠날 때 Firebase 리스너 해제
-                // 자신의 플레이어 정보만 삭제
+                gameState.roomRef.off();
                 await gameState.roomRef.child('players').child(gameState.playerUID).remove();
                 console.log(`플레이어 ${gameState.playerName}이(가) 방을 나갑니다. UID: ${gameState.playerUID}`);
-
-                // playerOrderUids에서 자신의 UID 삭제 (트랜잭션 사용)
-                // 이 부분은 방장만 할 수 있도록 규칙 설정이 필요합니다.
-                // 현재는 규칙에서 제한하지 않으므로 클라이언트에서 시도해 볼 수 있도록 둡니다.
-                // 하지만 안전하게 하려면 Cloud Functions 같은 서버 로직이 필요합니다.
-                // 일단은 클라이언트에서만 시도하도록 둡니다 (규칙에 의해 거부될 수 있음).
+                
                 gameState.roomRef.child('playerOrderUids').transaction((currentUids) => {
                     if (currentUids) {
                         const updatedUids = currentUids.filter(uid => uid !== gameState.playerUID);
-                        return updatedUids.length > 0 ? updatedUids : null; // 배열이 비면 null로 만들어 노드 삭제
+                        return updatedUids.length > 0 ? updatedUids : null;
                     }
                     return currentUids;
                 }).catch(error => console.error("Failed to remove UID from playerOrderUids on unload:", error));
