@@ -1430,51 +1430,49 @@ function syncBingoBoard(myBoardStateData) {
 
 
         // 공통으로 뒤집힌 숫자 목록에 따라 빙고 셀의 클릭 가능 여부 업데이트
-        // (이 함수는 setupRoomListeners의 on('value')에서 호출됨)
-        function updateBingoCellClickability() {
-            const cells = document.querySelectorAll('.bingo-cell');
-            const currentPlayerUid = gameState.playerList[gameState.currentTurn]; // 현재 턴 플레이어의 UID
-            const isMyTurn = currentPlayerUid === gameState.playerUID; // 내 UID와 현재 턴 UID 비교
-            
-            // 게임 종료 여부는 roomData.gameEnded 또는 roomData.winner로 확인
-            // setupRoomListeners에서 roomData를 통해 직접 확인하므로, 여기서는 해당 상태를 참조
-            const gameEnded = gameState.gameStarted && (gameState.roomRef && gameState.roomRef.gameEnded || gameState.roomRef && gameState.roomRef.winner);
+function updateBingoCellClickability() {
+    const cells = document.querySelectorAll('.bingo-cell');
+    const currentPlayerUid = gameState.playerList[gameState.currentTurn]; // 현재 턴 플레이어의 UID
+    const isMyTurn = currentPlayerUid === gameState.playerUID; // 내 UID와 현재 턴 UID 비교
+    
+    // 게임 종료 여부는 roomData.gameEnded 또는 roomData.winner로 확인
+    const gameEnded = gameState.gameStarted && (gameState.roomRef && gameState.roomRef.gameEnded || gameState.roomRef && gameState.roomRef.winner);
 
 
-            cells.forEach((cellElement, index) => {
-                const cellNumber = gameState.bingoBoard[index].number;
-                const isFlippedCommon = gameState.flippedNumbers.includes(cellNumber); // 이 숫자가 공통으로 뒤집혔는지
+    cells.forEach((cellElement, index) => {
+        const cellNumber = gameState.bingoBoard[index].number;
+        const isFlippedCommon = gameState.flippedNumbers.includes(cellNumber); // 이 숫자가 공통으로 뒤집혔는지
 
-                if (gameEnded) { // 게임이 종료되었다면 모든 셀 클릭 불가
-                    cellElement.style.pointerEvents = 'none';
-                    cellElement.style.opacity = '0.7';
-                } else if (isMyTurn) {
-                    // 내 턴일 때
-                    if (!isFlippedCommon && !gameState.hasMadeMoveInTurn) {
-                        // 아직 공통으로 뒤집히지 않았고 (내가 아직 이번 턴에 선택 안 했다면) -> 클릭 가능
-                        cellElement.style.pointerEvents = 'auto';
-                        cellElement.style.opacity = '1';
-                    } else if (isFlippedCommon) {
-                        // 이미 공통으로 뒤집힌 숫자 -> 내 개인 빙고판 상태 (flipped/failed)를 변경하기 위해 클릭 가능
-                        cellElement.style.pointerEvents = 'auto';
-                        cellElement.style.opacity = '1';
-                    } else { // !isFlippedCommon && gameState.hasMadeMoveInTurn (내 턴에 이미 하나 클릭했고, 아직 공통으로 뒤집히지 않은 다른 셀)
-                        cellElement.style.pointerEvents = 'none';
-                        cellElement.style.opacity = '0.5';
-                    }
-                } else { // 내 턴이 아닐 때
-                    if (isFlippedCommon) {
-                        // 다른 플레이어가 뒤집은 셀 -> 나도 내 개인 빙고판 상태 변경 가능
-                        cellElement.style.pointerEvents = 'auto';
-                        cellElement.style.opacity = '1';
-                    } else {
-                        // 아직 공통으로 뒤집히지 않은 셀 -> 클릭 불가
-                        cellElement.style.pointerEvents = 'none';
-                        cellElement.style.opacity = '0.5';
-                    }
-                }
-            });
+        if (gameEnded) { // 게임이 종료되었다면 모든 셀 클릭 불가
+            cellElement.style.pointerEvents = 'none';
+            cellElement.style.opacity = '0.7';
+        } else if (isMyTurn) {
+            // 내 턴일 때
+            if (!isFlippedCommon && !gameState.hasMadeMoveInTurn) {
+                // 아직 공통으로 뒤집히지 않았고 (내가 아직 이번 턴에 선택 안 했다면) -> 클릭 가능
+                cellElement.style.pointerEvents = 'auto';
+                cellElement.style.opacity = '1';
+            } else if (isFlippedCommon) {
+                // 이미 공통으로 뒤집힌 숫자 -> 내 개인 빙고판 상태 (flipped/failed)를 변경하기 위해 클릭 가능
+                cellElement.style.pointerEvents = 'auto';
+                cellElement.style.opacity = '1';
+            } else { // !isFlippedCommon && gameState.hasMadeMoveInTurn (내 턴에 이미 하나 클릭했고, 아직 공통으로 뒤집히지 않은 다른 셀)
+                cellElement.style.pointerEvents = 'none';
+                cellElement.style.opacity = '0.5';
+            }
+        } else { // 내 턴이 아닐 때
+            if (isFlippedCommon) {
+                // 다른 플레이어가 뒤집은 셀 -> 나도 내 개인 빙고판 상태 변경 가능
+                cellElement.style.pointerEvents = 'auto';
+                cellElement.style.opacity = '1';
+            } else {
+                // 아직 공통으로 뒤집히지 않은 셀 -> 클릭 불가
+                cellElement.style.pointerEvents = 'none';
+                cellElement.style.opacity = '0.5';
+            }
         }
+    });
+}
 
 
         // 빙고 가능 여부 (버튼 활성화) 확인 및 UI 업데이트
