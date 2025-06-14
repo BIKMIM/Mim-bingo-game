@@ -965,88 +965,88 @@ async function createRoom() {
         }
 
         // 방 입장 (초대 링크 자동 입장을 위해 prefilledRoomCode 인자 사용)
-        async function joinRoom(prefilledRoomCode = null) {
-            const playerNameInput = document.getElementById('player-name').value.trim();
-            const roomCode = prefilledRoomCode || document.getElementById('room-code').value.trim().toUpperCase();
-            
-            if (!playerNameInput) {
-                showMessage('플레이어 이름을 입력해주세요!', 'error');
-                return;
-            }
-            
-            if (!roomCode) {
-                showMessage('방 코드를 입력해주세요!', 'error');
-                return;
-            }
-            if (!gameState.playerUID) { // 익명 UID가 아직 없는 경우
-                showMessage('로그인 중입니다. 잠시 후 다시 시도해주세요.', 'error');
-                return;
-            }
+async function joinRoom(prefilledRoomCode = null) {
+    const playerNameInput = document.getElementById('player-name').value.trim();
+    const roomCode = prefilledRoomCode || document.getElementById('room-code').value.trim().toUpperCase();
+    
+    if (!playerNameInput) {
+        showMessage('플레이어 이름을 입력해주세요!', 'error');
+        return;
+    }
+    
+    if (!roomCode) {
+        showMessage('방 코드를 입력해주세요!', 'error');
+        return;
+    }
+    if (!gameState.playerUID) { // 익명 UID가 아직 없는 경우
+        showMessage('로그인 중입니다. 잠시 후 다시 시도해주세요.', 'error');
+        return;
+    }
 
-            try {
-                gameState.isHost = false;
-                gameState.playerName = playerNameInput; // 사용자가 입력한 닉네임
-                gameState.roomCode = roomCode;
-                gameState.roomRef = database.ref('rooms/' + roomCode);
+    try {
+        gameState.isHost = false;
+        gameState.playerName = playerNameInput; // 사용자가 입력한 닉네임
+        gameState.roomCode = roomCode;
+        gameState.roomRef = database.ref('rooms/' + roomCode);
 
-                const snapshot = await gameState.roomRef.once('value');
-                if (!snapshot.exists()) {
-                    showMessage('존재하지 않는 방 코드입니다!', 'error');
-                    return;
-                }
-
-                const roomData = snapshot.val();
-                if (roomData.gameStarted) {
-                    showMessage('이미 시작된 게임입니다!', 'error');
-                    return;
-                }
-                
-                const currentPlayersCount = Object.keys(roomData.players || {}).length;
-                if (roomData.maxPlayers && currentPlayersCount >= roomData.maxPlayers) {
-                    showMessage(`이 방은 최대 ${roomData.maxPlayers}명까지 참여 가능합니다. 현재 인원: ${currentPlayersCount}명`, 'error');
-                    return;
-                }
-
-                // 이미 자신의 UID로 접속된 플레이어가 있는지 확인 (새로고침 등 처리)
-                if (roomData.players && roomData.players[gameState.playerUID]) {
-                     showMessage('이미 이 방에 접속 중입니다.', 'info');
-                     setupRoomListeners(); // 다시 리스너만 설정
-                     return;
-                }
-                // 다른 플레이어 이름과 중복되는지 확인 (닉네임 중복 방지)
-                const existingPlayerNames = Object.values(roomData.players || {}).map(p => p.name);
-                if (existingPlayerNames.includes(playerNameInput)) {
-                    showMessage('이미 사용 중인 이름입니다. 다른 이름을 선택해주세요!', 'error');
-                    return;
-                }
-
-                // 플레이어 추가 시, 자신의 boardState도 함께 초기화
-                await gameState.roomRef.child('players').child(gameState.playerUID).set({
-                    name: gameState.playerName, // 닉네임
-                    isHost: false,
-                    joinedAt: Date.now(),
-                    boardState: {}
-                });
-
-                // playerOrderUids에 자신의 UID 추가 (트랜잭션 사용)
-                await gameState.roomRef.child('playerOrderUids').transaction((currentUids) => {
-                    const uids = currentUids || [];
-                    if (!uids.includes(gameState.playerUID)) {
-                        uids.push(gameState.playerUID);
-                    }
-                    return uids;
-                });
-
-                gameState.boardSize = roomData.boardSize || 3;
-                gameState.maxPlayers = roomData.maxPlayers || 2;
-                
-                setupRoomListeners();
-                showMessage(`방에 입장했습니다! 방 코드: ${roomCode}`, 'success');
-                
-            } catch (error) {
-                showMessage('방 입장에 실패했습니다: ' + error.message, 'error');
-            }
+        const snapshot = await gameState.roomRef.once('value');
+        if (!snapshot.exists()) {
+            showMessage('존재하지 않는 방 코드입니다!', 'error');
+            return;
         }
+
+        const roomData = snapshot.val();
+        if (roomData.gameStarted) {
+            showMessage('이미 시작된 게임입니다!', 'error');
+            return;
+        }
+        
+        const currentPlayersCount = Object.keys(roomData.players || {}).length;
+        if (roomData.maxPlayers && currentPlayersCount >= roomData.maxPlayers) {
+            showMessage(`이 방은 최대 ${roomData.maxPlayers}명까지 참여 가능합니다. 현재 인원: ${currentPlayersCount}명`, 'error');
+            return;
+        }
+
+        // 이미 자신의 UID로 접속된 플레이어가 있는지 확인 (새로고침 등 처리)
+        if (roomData.players && roomData.players[gameState.playerUID]) {
+             showMessage('이미 이 방에 접속 중입니다.', 'info');
+             setupRoomListeners(); // 다시 리스너만 설정
+             return;
+        }
+        // 다른 플레이어 이름과 중복되는지 확인 (닉네임 중복 방지)
+        const existingPlayerNames = Object.values(roomData.players || {}).map(p => p.name);
+        if (existingPlayerNames.includes(playerNameInput)) {
+            showMessage('이미 사용 중인 이름입니다. 다른 이름을 선택해주세요!', 'error');
+            return;
+        }
+
+        // 플레이어 추가 시, 자신의 boardState도 함께 초기화
+        await gameState.roomRef.child('players').child(gameState.playerUID).set({
+            name: gameState.playerName, // 닉네임
+            isHost: false,
+            joinedAt: Date.now(),
+            boardState: {}
+        });
+
+        // playerOrderUids에 자신의 UID 추가 (트랜잭션 사용)
+        await gameState.roomRef.child('playerOrderUids').transaction((currentUids) => {
+            const uids = currentUids || [];
+            if (!uids.includes(gameState.playerUID)) {
+                uids.push(gameState.playerUID);
+            }
+            return uids;
+        });
+
+        gameState.boardSize = roomData.boardSize || 3;
+        gameState.maxPlayers = roomData.maxPlayers || 2;
+        
+        setupRoomListeners();
+        showMessage(`방에 입장했습니다! 방 코드: ${roomCode}`, 'success');
+        
+    } catch (error) {
+        showMessage('방 입장에 실패했습니다: ' + error.message, 'error');
+    }
+}
 
         // 방 데이터 리스너 설정 (모든 방 상태 변화를 여기서 처리)
         function setupRoomListeners() {
