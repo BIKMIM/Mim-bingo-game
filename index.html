@@ -574,24 +574,25 @@
                     <input type="text" id="player-name" placeholder="당신의 닉네임을 입력하세요" maxlength="10">
                 </div>
                 
-                <div class="create-room-controls">
-                    <div class="input-group inline-label" id="max-players-create-group">
-                        <label for="max-players-create">최대 플레이어 수:</label>
-                        <select id="max-players-create">
-                            <option value="2">2명</option>
-                            <option value="3">3명</option>
-                            <option value="4">4명</option>
-                            <option value="5">5명</option>
-                            <option value="6">6명</option>
-                            <option value="7">7명</option>
-                            <option value="8">8명</option>
-                            <option value="9">9명</option>
-                            <option value="10">10명</option>
-                            <option value="11">11명</option>
-                            <option value="12">12명</option>
-                        </select>
-                    </div>
-                    <button class="btn btn-primary" id="create-room-btn" onclick="createRoom()">새 방 만들기</button>
+                <div class="create-room-controls" style="pointer-events: none; opacity: 0.5;"> <div class="input-group inline-label" id="max-players-create-group">
+        <label for="max-players-create">최대 플레이어 수:</label>
+        <select id="max-players-create">
+            <option value="2">2명</option>
+            <option value="3">3명</option>
+            <option value="4">4명</option>
+            <option value="5">5명</option>
+            <option value="6">6명</option>
+            <option value="7">7명</option>
+            <option value="8">8명</option>
+            <option value="9">9명</option>
+            <option value="10">10명</option>
+            <option value="11">11명</option>
+            <option value="12">12명</option>
+        </select>
+    </div>
+    <button class="btn btn-primary" id="create-room-btn" onclick="createRoom()" disabled>새 방 만들기</button> </div>
+
+<div class="button-group" id="main-action-buttons" style="margin-top: 15px; pointer-events: none; opacity: 0.5;"> <button class="btn btn-secondary" id="show-join-room-btn" onclick="showJoinRoom()" disabled>방 입장하기</button> </div>
                 </div>
 
                 <div class="button-group" id="main-action-buttons" style="margin-top: 15px;">
