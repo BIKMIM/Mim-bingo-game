@@ -1321,24 +1321,24 @@ async function startGame() {
         }
 
         // 선공 플레이어 옵션 업데이트 (방장에게만 보임)
-        function updateFirstPlayerOptions() {
-            const firstPlayerSelect = document.getElementById('first-player-select');
-            // 드롭다운 초기화
-            firstPlayerSelect.innerHTML = '<option value="">선공을 선택하세요</option>';
-            
-            gameState.playerList.forEach(playerUid => { // playerList는 이제 UID 배열
-                const playerName = gameState.players[playerUid]?.name || 'Unknown Player'; // UID에 해당하는 닉네임 가져오기
-                const option = document.createElement('option');
-                option.value = playerUid; // 옵션 값은 UID
-                option.textContent = playerName; // 표시되는 텍스트는 닉네임
-                firstPlayerSelect.appendChild(option);
-            });
-            
-            // Firebase에 현재 턴이 이미 설정되어 있다면 해당 플레이어 선택
-            if (gameState.currentTurn !== null && gameState.playerList[gameState.currentTurn]) {
-                firstPlayerSelect.value = gameState.playerList[gameState.currentTurn]; // 선택 값은 UID
-            }
-        }
+function updateFirstPlayerOptions() {
+    const firstPlayerSelect = document.getElementById('first-player-select');
+    // 드롭다운 초기화
+    firstPlayerSelect.innerHTML = '<option value="">선공을 선택하세요</option>';
+    
+    gameState.playerList.forEach(playerUid => { // playerList는 이제 UID 배열
+        const playerName = gameState.players[playerUid]?.name || 'Unknown Player'; // UID에 해당하는 닉네임 가져오기
+        const option = document.createElement('option');
+        option.value = playerUid; // 옵션 값은 UID
+        option.textContent = playerName; // 표시되는 텍스트는 닉네임
+        firstPlayerSelect.appendChild(option);
+    });
+    
+    // Firebase에 현재 턴이 이미 설정되어 있다면 해당 플레이어 선택
+    if (gameState.currentTurn !== null && gameState.playerList[gameState.currentTurn]) {
+        firstPlayerSelect.value = gameState.playerList[gameState.currentTurn]; // 선택 값은 UID
+    }
+}
 
         // 턴 표시 업데이트
         function updateTurnDisplay() {
