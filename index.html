@@ -1341,20 +1341,20 @@ function updateFirstPlayerOptions() {
 }
 
         // 턴 표시 업데이트
-        function updateTurnDisplay() {
-            const turnElement = document.getElementById('current-turn');
-            if (turnElement && gameState.playerList.length > 0) {
-                const currentPlayerUid = gameState.playerList[gameState.currentTurn]; // UID 가져오기
-                const currentPlayerName = gameState.players[currentPlayerUid]?.name || '알 수 없음'; // 닉네임 가져오기
-                const isMyTurn = currentPlayerUid === gameState.playerUID; // 내 UID와 현재 턴의 UID 비교
-                
-                if (isMyTurn) {
-                    turnElement.innerHTML = '<span style="color: #667eea; font-weight: bold;">당신의 차례입니다!</span>';
-                } else {
-                    turnElement.textContent = `${currentPlayerName}의 차례`;
-                }
-            }
+function updateTurnDisplay() {
+    const turnElement = document.getElementById('current-turn');
+    if (turnElement && gameState.playerList.length > 0) {
+        const currentPlayerUid = gameState.playerList[gameState.currentTurn]; // UID 가져오기
+        const currentPlayerName = gameState.players[currentPlayerUid]?.name || '알 수 없음'; // 닉네임 가져오기
+        const isMyTurn = currentPlayerUid === gameState.playerUID; // 내 UID와 현재 턴의 UID 비교
+        
+        if (isMyTurn) {
+            turnElement.innerHTML = '<span style="color: #667eea; font-weight: bold;">당신의 차례입니다!</span>';
+        } else {
+            turnElement.textContent = `${currentPlayerName}의 차례`;
         }
+    }
+}
 
         // 빙고판 UI 동기화 (자신의 개별 boardState 및 공통 flippedNumbers 기반)
         function syncBingoBoard(myBoardStateData) {
