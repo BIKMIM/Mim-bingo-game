@@ -1357,83 +1357,76 @@ function updateTurnDisplay() {
 }
 
         // 빙고판 UI 동기화 (자신의 개별 boardState 및 공통 flippedNumbers 기반)
-        function syncBingoBoard(myBoardStateData) {
-            const totalCells = gameState.boardSize * gameState.boardSize;
+function syncBingoBoard(myBoardStateData) {
+    const totalCells = gameState.boardSize * gameState.boardSize;
 
-            // MissionMap이 아직 로드되지 않았거나, 빙고판이 생성되지 않았다면 재시도
-            if (Object.keys(gameState.missionMap).length === 0 || gameState.bingoBoard.length === 0) {
-                if (gameState.gameStarted && Object.keys(gameState.missionMap).length === totalCells) {
-                    generateBingoBoard();
-                } else if (gameState.gameStarted && Object.keys(gameState.missionMap).length === 0) {
-                    // 게임은 시작됐는데 미션 맵이 아직 안들어왔으면 기다림 (드문 경우)
-                    console.warn("syncBingoBoard: Waiting for missionMap to load...");
-                    setTimeout(() => syncBingoBoard(myBoardStateData), 100);
-                    return;
-                } else {
-                    // 게임 시작 전이거나, 미션 맵이 아직 없는 경우
-                    return;
-                }
-            }
-            
-            // DOM에 빙고 셀이 아직 없으면 기다림
-            const bingoBoardElement = document.getElementById('bingo-board');
-            if (bingoBoardElement.children.length === 0 || bingoBoardElement.children.length !== totalCells) {
-                console.warn("syncBingoBoard: Waiting for bingo board DOM to be generated...");
-                setTimeout(() => syncBingoBoard(myBoardStateData), 50);
-                return;
-            }
-
-            const cells = bingoBoardElement.querySelectorAll('.bingo-cell');
-            // let markedCellsCount = 0; // 이 변수는 사용되지 않아 제거
-
-            for (let i = 0; i < totalCells; i++) {
-                const cellInLocalBoard = gameState.bingoBoard[i]; // 로컬 빙고판의 숫자/미션 정보
-                const cellNumber = cellInLocalBoard.number;
-                const missionText = cellInLocalBoard.mission; // 로컬에 저장된 미션 (미션맵에서 옴)
-
-                // Firebase의 공통 뒤집힌 숫자 목록에 해당 숫자가 있는지 확인
-                const isFlippedCommon = gameState.flippedNumbers.includes(cellNumber);
-                // Firebase의 내 개인 boardState에 이 숫자에 대한 정보가 있는지 확인
-                const myCellStateFromFirebase = myBoardStateData[cellNumber] ? myBoardStateData[cellNumber].state : 'unflipped';
-
-                const cellElement = cells[i];
-                cellElement.classList.remove('flipped', 'failed');
-
-                // 공통으로 뒤집힌 숫자 (다른 플레이어가 선택)
-                if (isFlippedCommon) {
-                    if (myCellStateFromFirebase === 'flipped') {
-                        cellElement.classList.add('flipped');
-                        cellElement.textContent = missionText;
-                        // markedCellsCount++; // 이 변수는 사용되지 않아 제거
-                    } else if (myCellStateFromFirebase === 'failed') {
-                        cellElement.classList.add('failed');
-                        cellElement.textContent = missionText;
-                        // markedCellsCount++; // 이 변수는 사용되지 않아 제거
-                    } else {
-                        // 공통으로 뒤집혔는데 내 상태가 unflipped인 경우, 나도 flipped로 표시
-                        cellElement.classList.add('flipped');
-                        cellElement.textContent = missionText;
-                        // markedCellsCount++; // 이 변수는 사용되지 않아 제거
-                        // Firebase에 나의 상태도 flipped로 반영 (다른 플레이어가 뒤집었을 때 나도 자동으로 뒤집힘)
-                        // Note: 여기서 set을 직접 호출하면 규칙에 의해 거부될 수 있습니다.
-                        // Realtime Database 규칙이 "읽기만 허용, 쓰기 금지" 상태이기 때문입니다.
-                        // 이 자동 플립은 로컬에서만 이루어지거나, Firebase 규칙에서 허용되어야 합니다.
-                        // 현재 규칙으로는 이 쓰기 작업은 실패할 것입니다.
-                        gameState.roomRef.child(`players/${gameState.playerUID}/boardState/${cellNumber}`).set({
-                            state: 'flipped',
-                            mission: missionText,
-                            changedAt: firebase.database.ServerValue.TIMESTAMP
-                        }).catch(error => console.error("Auto-flip update failed:", error));
-                    }
-                } else {
-                    // 공통으로 뒤집히지 않은 숫자 (아직 아무도 선택 안 함)
-                    cellElement.textContent = cellNumber;
-                }
-            }
-            
-            // 'remaining-missions-count'는 게임 중에는 의미가 없으므로 업데이트 안 함
-            // 대신 'flipped-numbers-count'는 setupRoomListeners에서 이미 업데이트됨
+    // MissionMap이 아직 로드되지 않았거나, 빙고판이 생성되지 않았다면 재시도
+    if (Object.keys(gameState.missionMap).length === 0 || gameState.bingoBoard.length === 0) {
+        if (gameState.gameStarted && Object.keys(gameState.missionMap).length === totalCells) {
+            generateBingoBoard();
+        } else if (gameState.gameStarted && Object.keys(gameState.missionMap).length === 0) {
+            // 게임은 시작됐는데 미션 맵이 아직 안들어왔으면 기다림 (드문 경우)
+            console.warn("syncBingoBoard: Waiting for missionMap to load...");
+            setTimeout(() => syncBingoBoard(myBoardStateData), 100);
+            return;
+        } else {
+            // 게임 시작 전이거나, 미션 맵이 아직 없는 경우
+            return;
         }
+    }
+    
+    // DOM에 빙고 셀이 아직 없으면 기다림
+    const bingoBoardElement = document.getElementById('bingo-board');
+    if (bingoBoardElement.children.length === 0 || bingoBoardElement.children.length !== totalCells) {
+        console.warn("syncBingoBoard: Waiting for bingo board DOM to be generated...");
+        setTimeout(() => syncBingoBoard(myBoardStateData), 50);
+        return;
+    }
+
+    const cells = bingoBoardElement.querySelectorAll('.bingo-cell');
+
+    for (let i = 0; i < totalCells; i++) {
+        const cellInLocalBoard = gameState.bingoBoard[i]; // 로컬 빙고판의 숫자/미션 정보
+        const cellNumber = cellInLocalBoard.number;
+        const missionText = cellInLocalBoard.mission; // 로컬에 저장된 미션 (미션맵에서 옴)
+
+        // Firebase의 공통 뒤집힌 숫자 목록에 해당 숫자가 있는지 확인
+        const isFlippedCommon = gameState.flippedNumbers.includes(cellNumber);
+        // Firebase의 내 개인 boardState에 이 숫자에 대한 정보가 있는지 확인
+        const myCellStateFromFirebase = myBoardStateData[cellNumber] ? myBoardStateData[cellNumber].state : 'unflipped';
+
+        const cellElement = cells[i];
+        cellElement.classList.remove('flipped', 'failed');
+
+        // 공통으로 뒤집힌 숫자 (다른 플레이어가 선택)
+        if (isFlippedCommon) {
+            if (myCellStateFromFirebase === 'flipped') {
+                cellElement.classList.add('flipped');
+                cellElement.textContent = missionText;
+            } else if (myCellStateFromFirebase === 'failed') {
+                cellElement.classList.add('failed');
+                cellElement.textContent = missionText;
+            } else {
+                // 공통으로 뒤집혔는데 내 상태가 unflipped인 경우, 나도 flipped로 표시
+                cellElement.classList.add('flipped');
+                cellElement.textContent = missionText;
+                // Firebase에 나의 상태도 flipped로 반영 (다른 플레이어가 뒤집었을 때 나도 자동으로 뒤집힘)
+                // Note: 여기서 set을 직접 호출하면 규칙에 의해 거부될 수 있습니다.
+                // Firebase 규칙이 auth.uid 기반으로 쓰기 권한을 엄격히 제한하고 있기 때문입니다.
+                // 이 자동 플립은 로컬에서만 이루어지거나, Firebase 규칙에서 해당 UID가 자신의 boardState를 쓸 수 있도록 허용되어야 합니다.
+                // (현재 규칙에서는 자신의 boardState는 쓸 수 있도록 되어있으므로 이 쓰기 자체는 가능합니다.)
+                gameState.roomRef.child(`players/${gameState.playerUID}/boardState/${cellNumber}`).set({
+                    state: 'flipped',
+                    mission: missionText,
+                    changedAt: firebase.database.ServerValue.TIMESTAMP
+                }).catch(error => console.error("Auto-flip update failed:", error));
+            }
+        } else {
+            // 공통으로 뒤집히지 않은 숫자 (아직 아무도 선택 안 함)
+            cellElement.textContent = cellNumber;
+        }
+    }
+}
 
 
         // 공통으로 뒤집힌 숫자 목록에 따라 빙고 셀의 클릭 가능 여부 업데이트
