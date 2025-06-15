@@ -212,10 +212,11 @@
 
         /* 게임 진행 화면 */
         .game-area {
-            padding: 20px;
+            padding: 0;
             display: none;
             min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
         }
 
         .game-area .container {
@@ -226,52 +227,65 @@
             display: flex;
             flex-direction: column;
             background: white;
-            border-radius: 15px;
+            border-radius: 0;
             overflow: hidden;
         }
 
         .game-area .header {
             flex-shrink: 0;
-            padding: 15px 20px;
+            padding: 10px 20px;
+            background: #4a5568;
+        }
+
+        .game-area .header h1 {
+            font-size: clamp(18px, 4vw, 28px);
+            margin: 0;
+        }
+
+        .game-area .header p {
+            font-size: clamp(12px, 2.5vw, 16px);
+            margin: 0;
         }
 
         .game-content {
             flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            padding: 20px;
-            gap: 20px;
+            padding: 15px 10px 10px 10px;
+            overflow-y: auto;
+            min-height: 0;
         }
 
         /* 빙고판 */
         .bingo-board {
             display: grid;
-            gap: 8px;
-            width: min(90vw, 90vh, 600px);
-            height: min(90vw, 90vh, 600px);
+            gap: clamp(4px, 1vw, 8px);
+            width: min(85vw, 85vh, 450px);
+            height: min(85vw, 85vh, 450px);
             grid-template-columns: repeat(3, 1fr);
             margin: 0 auto;
+            flex-shrink: 0;
         }
 
         /* 빙고 셀 */
         .bingo-cell {
             aspect-ratio: 1;
             background: #e2e8f0;
-            border: 3px solid #cbd5e0;
-            border-radius: 12px;
+            border: 2px solid #cbd5e0;
+            border-radius: clamp(6px, 1.5vw, 12px);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: clamp(18px, 4vw, 32px);
+            font-size: clamp(16px, 3.5vw, 28px);
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
             color: #4a5568;
             word-break: keep-all;
             text-align: center;
-            padding: 8px;
+            padding: clamp(4px, 1vw, 8px);
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
@@ -285,7 +299,7 @@
         .bingo-cell.flipped {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            font-size: clamp(12px, 2.5vw, 18px);
+            font-size: clamp(10px, 2vw, 16px);
             border-color: #5a67d8;
         }
 
@@ -295,30 +309,32 @@
             color: white;
             text-decoration: line-through;
             opacity: 0.8;
-            font-size: clamp(12px, 2.5vw, 18px);
+            font-size: clamp(10px, 2vw, 16px);
             border-color: #e53e3e;
         }
 
         /* 게임 상태 표시 */
         .game-status {
             text-align: center;
-            margin-bottom: 15px;
             width: 100%;
+            flex-shrink: 0;
+            margin-bottom: 10px;
         }
 
         .status-text {
-            font-size: clamp(16px, 3vw, 22px);
+            font-size: clamp(14px, 2.5vw, 18px);
             color: #4a5568;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-weight: 600;
+            line-height: 1.2;
         }
 
         .room-code-display {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-size: clamp(18px, 3.5vw, 26px);
+            padding: clamp(8px, 2vw, 12px) clamp(16px, 4vw, 24px);
+            border-radius: clamp(8px, 2vw, 12px);
+            font-size: clamp(16px, 3vw, 22px);
             font-weight: bold;
             display: inline-block;
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
@@ -328,16 +344,16 @@
         #bingo-button, #turn-end-button {
             background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
             color: white;
-            padding: clamp(12px, 3vw, 20px) clamp(24px, 6vw, 40px);
-            font-size: clamp(20px, 4vw, 32px);
+            padding: clamp(10px, 2.5vw, 16px) clamp(20px, 5vw, 32px);
+            font-size: clamp(16px, 3.5vw, 24px);
             font-weight: bold;
             border: none;
-            border-radius: 15px;
+            border-radius: clamp(8px, 2vw, 12px);
             cursor: pointer;
             transition: all 0.3s ease;
-            margin: 8px 0;
+            margin: 4px 0;
             display: block;
-            width: min(90vw, 400px);
+            width: min(80vw, 320px);
             box-sizing: border-box;
             box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
         }
@@ -368,21 +384,23 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 6px;
             width: 100%;
-            margin-top: 15px;
+            flex-shrink: 0;
+            margin-top: 10px;
         }
 
         .back-to-setup {
-            margin-top: 15px;
+            flex-shrink: 0;
+            margin-top: 8px;
         }
 
         .back-to-setup .btn {
             background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
             color: #4a5568;
-            padding: clamp(8px, 2vw, 12px) clamp(16px, 4vw, 24px);
-            font-size: clamp(14px, 2.5vw, 18px);
-            border-radius: 10px;
+            padding: clamp(6px, 1.5vw, 10px) clamp(12px, 3vw, 20px);
+            font-size: clamp(12px, 2vw, 16px);
+            border-radius: clamp(6px, 1.5vw, 10px);
             box-shadow: 0 3px 10px rgba(0,0,0,0.1);
             transition: all 0.3s ease;
         }
@@ -721,7 +739,7 @@
         /* 반응형 디자인 개선 */
         @media (max-width: 768px) {
             body {
-                padding: 10px;
+                padding: 0;
             }
             
             .container {
@@ -775,27 +793,33 @@
             
             /* 모바일 게임 화면 최적화 */
             .game-area {
-                padding: 10px;
+                padding: 0;
             }
             
             .game-area .container {
-                border-radius: 10px;
+                border-radius: 0;
+                height: 100vh;
+            }
+            
+            .game-area .header {
+                padding: 8px 15px;
             }
             
             .game-content {
-                padding: 15px;
-                gap: 15px;
+                padding: 10px 8px 8px 8px;
             }
             
             .bingo-board {
-                gap: 6px;
-                width: min(95vw, 95vh, 500px);
-                height: min(95vw, 95vh, 500px);
+                width: min(90vw, 75vh, 350px);
+                height: min(90vw, 75vh, 350px);
             }
             
-            .bingo-cell {
-                border-radius: 8px;
-                border-width: 2px;
+            .game-status {
+                margin-bottom: 8px;
+            }
+            
+            .status-text {
+                margin-bottom: 4px;
             }
 
             .winner-message {
@@ -807,48 +831,51 @@
 
         @media (max-width: 480px) {
             .header h1 {
-                font-size: 1.5em;
+                font-size: 1.3em;
             }
             
-            /* 모바일 세로 화면 최적화 */
-            .game-area {
-                padding: 5px;
+            /* 작은 모바일 화면 최적화 */
+            .game-area .header {
+                padding: 6px 12px;
             }
             
             .game-content {
-                padding: 10px;
-                gap: 10px;
+                padding: 8px 6px 6px 6px;
             }
             
             .bingo-board {
+                width: min(95vw, 70vh, 300px);
+                height: min(95vw, 70vh, 300px);
+                gap: clamp(3px, 0.8vw, 6px);
+            }
+            
+            .game-buttons {
+                margin-top: 6px;
                 gap: 4px;
-                width: min(98vw, 70vh, 350px);
-                height: min(98vw, 70vh, 350px);
             }
             
-            .bingo-cell {
-                border-radius: 6px;
-                font-size: clamp(14px, 3.5vw, 24px);
-            }
-            
-            .bingo-cell.flipped,
-            .bingo-cell.failed {
-                font-size: clamp(10px, 2vw, 14px);
+            .back-to-setup {
+                margin-top: 6px;
             }
         }
 
         /* 가로 화면 최적화 */
         @media (max-height: 600px) and (orientation: landscape) {
+            .game-area .header {
+                padding: 5px 15px;
+            }
+            
             .game-content {
                 flex-direction: row;
                 justify-content: space-around;
                 align-items: center;
-                padding: 10px;
+                padding: 8px;
+                gap: 10px;
             }
             
             .bingo-board {
-                width: min(50vw, 80vh, 400px);
-                height: min(50vw, 80vh, 400px);
+                width: min(45vh, 45vw, 300px);
+                height: min(45vh, 45vw, 300px);
             }
             
             .game-status {
@@ -857,12 +884,38 @@
             
             .game-buttons {
                 margin-top: 5px;
+                gap: 4px;
             }
             
             #bingo-button, #turn-end-button {
-                padding: clamp(8px, 2vh, 15px) clamp(16px, 4vw, 30px);
-                font-size: clamp(16px, 3vh, 24px);
-                width: min(40vw, 300px);
+                width: min(35vw, 250px);
+            }
+            
+            .back-to-setup {
+                margin-top: 5px;
+            }
+        }
+
+        /* PC 최적화 */
+        @media (min-width: 1024px) {
+            .game-area .container {
+                border-radius: 15px;
+                margin: 20px;
+                height: calc(100vh - 40px);
+            }
+            
+            .game-area {
+                padding: 20px;
+            }
+            
+            .bingo-board {
+                width: min(60vw, 60vh, 500px);
+                height: min(60vw, 60vh, 500px);
+            }
+            
+            .game-content {
+                padding: 25px;
+                gap: 15px;
             }
         }
     </style>
@@ -873,7 +926,7 @@
             <h1>🎯 밈주머니 빙고 게임!</h1>
             <p>밈주머니와 함께 즐기는 쐐기 빙고!</p>
             <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
-                v4.84 - 미션 세이브/로드 시스템 추가
+                v4.85 - 미션 세이브/로드 시스템 추가
             </div>
         </div>
 
