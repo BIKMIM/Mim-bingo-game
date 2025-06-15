@@ -214,6 +214,7 @@
         .game-area {
             padding: 30px;
             display: none;
+            min-height: 100vh; /* 전체 화면 높이 사용 */
         }
 
         /* 빙고판 */
@@ -659,7 +660,7 @@
             <h1>🎯 밈주머니 빙고 게임!</h1>
             <p>밈주머니와 함께 즐기는 쐐기 빙고!</p>
             <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
-                v4.82 - 미션 세이브/로드 시스템 추가
+                v4.81 - 미션 세이브/로드 시스템 추가
             </div>
         </div>
 
@@ -721,98 +722,106 @@
                     </p>
                 </div>
             </div>
-        </div>
-
-        <div class="players-section">
-            <h3>👥 참가자 목록</h3>
-            <div class="players-list" id="players-list">
-                <div class="loading">방에 입장하면 참가자가 표시됩니다</div>
-            </div>
-        </div>
-
-        <div class="missions-section">
-            <h3>📝 미션 텍스트</h3>
-            <div class="mission-input-area">
-                <input type="text" class="mission-input" id="mission-input" placeholder="미션 내용을 입력하세요" maxlength="20">
-                <button class="btn btn-primary" onclick="addMission()">추가</button>
-            </div>
-            <div class="button-group" style="margin-bottom: 15px;">
-                <button class="btn btn-secondary" onclick="saveMissions()">미션 저장</button>
-                <button class="btn btn-secondary" onclick="loadMissions()">미션 불러오기 (기본값)</button>
-            </div>
-            <div class="missions-list" id="missions-list">
-            </div>
-            <div id="current-mission-count" style="text-align: center; margin-top: 10px; font-size: 14px; color: #718096;">
-                현재 등록된 미션: 0개
-            </div>
-        </div>
-
-        <div class="game-options" id="game-options-section">
-            <div>
-                <label><strong>빙고판 크기:</strong></label>
-                <div class="radio-group">
-                    <div class="radio-item">
-                        <input type="radio" name="board-size" value="3" id="size-3" checked disabled> <label for="size-3">3x3</label>
-                    </div>
+        
+            <div class="players-section">
+                <h3>👥 참가자 목록</h3>
+                <div class="players-list" id="players-list">
+                    <div class="loading">방에 입장하면 참가자가 표시됩니다</div>
                 </div>
             </div>
-            <div>
-                <label><strong>승리 조건:</strong></label>
-                <div class="radio-group">
-                    <div class="radio-item">
-                        <input type="radio" name="win-condition" value="1" id="win-1" checked>
-                        <label for="win-1">1줄 빙고</label>
-                    </div>
-                    <div class="radio-item">
-                        <input type="radio" name="win-condition" value="2" id="win-2">
-                        <label for="win-2">2줄 빙고</label>
-                    </div>
-                    <div class="radio-item">
-                        <input type="radio" name="win-condition" value="3" id="win-3">
-                        <label for="win-3">3줄 빙고</label>
-                    </div>
+
+            <div class="missions-section">
+                <h3>📝 미션 텍스트</h3>
+                <div class="mission-input-area">
+                    <input type="text" class="mission-input" id="mission-input" placeholder="미션 내용을 입력하세요" maxlength="20">
+                    <button class="btn btn-primary" onclick="addMission()">추가</button>
+                </div>
+                <div class="button-group" style="margin-bottom: 15px;">
+                    <button class="btn btn-secondary" onclick="saveMissions()">미션 저장</button>
+                    <button class="btn btn-secondary" onclick="loadMissions()">미션 불러오기 (기본값)</button>
+                </div>
+                <div class="missions-list" id="missions-list">
+                </div>
+                <div id="current-mission-count" style="text-align: center; margin-top: 10px; font-size: 14px; color: #718096;">
+                    현재 등록된 미션: 0개
                 </div>
             </div>
-            
-            <div id="first-player-section" class="hidden" style="margin-top: 20px;">
-                <label><strong>선공 플레이어:</strong></label>
-                <select id="first-player-select" style="margin-left: 10px; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0;">
-                    <option value="">선공을 선택하세요</option>
-                </select>
-            </div>
-        </div>
 
-        <div class="start-game-section">
-            <button class="btn btn-primary" id="start-game-btn" onclick="startGame()" style="font-size: 18px; padding: 15px 30px;">
-                🎮 게임 시작!
-            </button>
+            <div class="game-options" id="game-options-section">
+                <div>
+                    <label><strong>빙고판 크기:</strong></label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="board-size" value="3" id="size-3" checked disabled> <label for="size-3">3x3</label>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label><strong>승리 조건:</strong></label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="win-condition" value="1" id="win-1" checked>
+                            <label for="win-1">1줄 빙고</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="win-condition" value="2" id="win-2">
+                            <label for="win-2">2줄 빙고</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="win-condition" value="3" id="win-3">
+                            <label for="win-3">3줄 빙고</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="first-player-section" class="hidden" style="margin-top: 20px;">
+                    <label><strong>선공 플레이어:</strong></label>
+                    <select id="first-player-select" style="margin-left: 10px; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0;">
+                        <option value="">선공을 선택하세요</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="start-game-section">
+                <button class="btn btn-primary" id="start-game-btn" onclick="startGame()" style="font-size: 18px; padding: 15px 30px;">
+                    🎮 게임 시작!
+                </button>
+            </div>
         </div>
     </div>
 
     <div id="game-area" class="game-area">
-        <div class="game-status">
-            <div class="status-text">방 코드: <span class="room-code-display" id="current-room-code">ABC123</span></div>
-            <div class="status-text">현재 차례: <strong id="current-turn">당신</strong></div>
-            <div class="status-text">공통 미션 수행 숫자: <strong id="flipped-numbers-count">0</strong></div>
-        </div>
+        <div class="container">
+            <div class="header">
+                <h1>🎯 밈주머니 빙고 게임!</h1>
+                <p>게임 진행 중</p>
+            </div>
+            
+            <div style="padding: 30px;">
+                <div class="game-status">
+                    <div class="status-text">방 코드: <span class="room-code-display" id="current-room-code">ABC123</span></div>
+                    <div class="status-text">현재 차례: <strong id="current-turn">당신</strong></div>
+                    <div class="status-text">공통 미션 수행 숫자: <strong id="flipped-numbers-count">0</strong></div>
+                </div>
 
-        <div class="bingo-board" id="bingo-board">
-        </div>
-        
-        <div class="game-buttons">
-            <button id="bingo-button" class="btn btn-primary" onclick="claimBingo()" disabled>
-                🎉 빙고!
-            </button>
-            <button id="turn-end-button" class="btn btn-secondary" onclick="turnEnd()" disabled>
-                ➡️ 턴 종료
-            </button>
-        </div>
+                <div class="bingo-board" id="bingo-board">
+                </div>
+                
+                <div class="game-buttons">
+                    <button id="bingo-button" class="btn btn-primary" onclick="claimBingo()" disabled>
+                        🎉 빙고!
+                    </button>
+                    <button id="turn-end-button" class="btn btn-secondary" onclick="turnEnd()" disabled>
+                        ➡️ 턴 종료
+                    </button>
+                </div>
 
-        <div style="text-align: center; margin-top: 20px;">
-            <button class="btn btn-secondary" onclick="backToSetup()">게임 설정으로 돌아가기</button>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn btn-secondary" onclick="backToSetup()">게임 설정으로 돌아가기</button>
+                </div>
+            </div>
         </div>
     </div>
-</div>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -1167,6 +1176,9 @@
                     document.getElementById('game-area').style.display = 'block';
                     document.getElementById('current-room-code').textContent = gameState.roomCode;
                     document.getElementById('flipped-numbers-count').textContent = gameState.flippedNumbers.length;
+                    
+                    // 게임 화면으로 전환 시 맨 위로 스크롤
+                    window.scrollTo(0, 0);
                     
                     const totalCells = gameState.boardSize * gameState.boardSize;
                     if (gameState.bingoBoard.length !== totalCells || document.getElementById('bingo-board').children.length !== totalCells) {
