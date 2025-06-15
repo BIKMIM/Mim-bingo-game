@@ -23,6 +23,7 @@
             align-items: center;
             justify-content: center;
             color: #4a5568;
+            overflow-y: hidden; /* 불필요한 외부 스크롤 방지 */
         }
 
         /* 메인 컨테이너 */
@@ -34,6 +35,9 @@
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             overflow: hidden;
+            display: flex; /* Flexbox로 변경 */
+            flex-direction: column; /* 세로 방향으로 정렬 */
+            height: auto; /* 내용에 따라 높이 조절 */
         }
 
         /* 헤더 */
@@ -43,6 +47,7 @@
             padding: 20px;
             text-align: center;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            flex-shrink: 0; /* 내용이 많아도 줄어들지 않음 */
         }
 
         .header h1 {
@@ -266,17 +271,17 @@
             display: none;
             min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            overflow: hidden;
+            overflow-y: auto; /* 게임 화면 자체에 스크롤 적용 */
             display: flex; /* Flexbox 사용하여 중앙 정렬 및 전체 화면 사용 */
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start; /* 콘텐츠가 위에서부터 시작하도록 */
             align-items: center;
         }
 
         .game-area .container {
             max-width: none;
             width: 100%;
-            height: 100vh;
+            height: 100%; /* 부모 높이에 맞춤 */
             margin: 0;
             display: flex;
             flex-direction: column;
@@ -286,20 +291,9 @@
             box-shadow: none; /* 게임 화면에서는 쉐도우 제거 */
         }
 
+        /* 게임 플레이 화면 헤더 제거 */
         .game-area .header {
-            flex-shrink: 0;
-            padding: 15px 20px;
-            background: #4a5568;
-        }
-
-        .game-area .header h1 {
-            font-size: clamp(20px, 4vw, 30px);
-            margin: 0;
-        }
-
-        .game-area .header p {
-            font-size: clamp(14px, 2.5vw, 18px);
-            margin: 0;
+            display: none;
         }
 
         .game-content {
@@ -309,8 +303,8 @@
             justify-content: center; /* 변경: 중앙 정렬 */
             align-items: center;
             padding: 20px;
-            overflow-y: auto;
-            min-height: 0;
+            min-height: 0; /* 최소 높이 0으로 설정 */
+            overflow-y: auto; /* 게임 콘텐츠 영역에서만 스크롤 발생 */
         }
 
         /* 빙고판 */
@@ -328,6 +322,7 @@
             border-radius: 15px;
             background: #fff;
             padding: clamp(10px, 2vw, 20px);
+            overflow: visible; /* 빙고판 자체 스크롤 방지 */
         }
 
         /* 빙고 셀 */
@@ -714,6 +709,12 @@
                 margin: 0;
                 border-radius: 0;
                 box-shadow: none;
+                height: 100vh; /* 모바일에서 컨테이너 높이를 100vh로 설정 */
+            }
+
+            .game-setup {
+                flex: 1; /* 게임 설정도 flex 성장 허용 */
+                overflow-y: auto; /* 내용이 많으면 스크롤 */
             }
             
             .game-setup, .players-section, .missions-section, .game-options, .start-game-section {
@@ -783,16 +784,13 @@
             }
             
             /* 모바일 게임 화면 최적화 */
-            .game-area .header {
-                padding: 10px 15px;
+            .game-area {
+                height: 100vh; /* 모바일에서 전체 화면 사용 */
+                padding: 0;
             }
             
-            .game-area .header h1 {
-                font-size: clamp(18px, 5vw, 24px);
-            }
-
-            .game-area .header p {
-                font-size: clamp(12px, 3vw, 16px);
+            .game-area .container {
+                height: 100%; /* 부모에 맞춤 */
             }
 
             .game-content {
@@ -870,11 +868,6 @@
                 font-size: 1.5em;
             }
             
-            /* 작은 모바일 화면 최적화 */
-            .game-area .header {
-                padding: 8px 12px;
-            }
-            
             .game-content {
                 padding: 10px 8px;
             }
@@ -902,21 +895,30 @@
 
         /* 가로 화면 최적화 (태블릿, 넓은 모바일) */
         @media (max-height: 600px) and (orientation: landscape) {
+            body {
+                padding: 0; /* body 패딩 제거 */
+                overflow-y: auto; /* 가로모드에서 필요할 경우 스크롤 허용 */
+            }
+            .container {
+                height: 100vh; /* 가로모드에서 컨테이너 높이를 100vh로 설정 */
+                border-radius: 0;
+            }
+
+            .game-area {
+                height: 100vh; /* 게임 영역 전체 높이 사용 */
+                padding: 0;
+            }
+
             .game-area .container {
                 flex-direction: row; /* 가로 배열 */
                 justify-content: space-around;
                 align-items: center;
                 padding: 10px;
+                height: 100%;
             }
 
-            .game-area .header {
-                position: absolute; /* 헤더를 절대 위치로 변경 */
-                top: 0;
-                left: 0;
-                width: 100%;
-                padding: 8px 15px;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-            }
+            /* 게임 플레이 화면 헤더 제거로 인한 상단 빈 공간 처리 */
+            /* .game-area .header { display: none; } */ /* 이미 위에서 처리됨 */
 
             .game-content {
                 flex-direction: row; /* 메인 콘텐츠도 가로로 */
@@ -926,7 +928,8 @@
                 gap: 20px;
                 width: 100%;
                 height: 100%;
-                padding-top: 80px; /* 헤더 높이만큼 패딩 추가 */
+                padding-top: 15px; /* 헤더가 없어졌으니 상단 패딩 다시 줄임 */
+                overflow-y: auto; /* 필요한 경우 내부 콘텐츠 스크롤 */
             }
             
             .bingo-board {
@@ -955,10 +958,9 @@
             }
             
             .back-to-setup {
-                position: absolute; /* 절대 위치로 변경 */
-                bottom: 10px;
-                right: 10px;
-                margin-top: 0;
+                /* 가로 모드에서는 하단에 고정되지 않도록 position: static; 또는 제거 */
+                position: static;
+                margin-top: 10px; /* 적절한 마진 추가 */
             }
         }
 
@@ -966,14 +968,21 @@
         @media (min-width: 1024px) {
             body {
                 padding: 30px;
+                overflow-y: auto; /* PC에서는 스크롤 필요할 수 있으므로 auto */
             }
             .container {
                 border-radius: 20px;
                 box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+                height: auto; /* 내용에 따라 높이 조절 */
+            }
+
+            .game-area {
+                height: 100vh; /* 게임 영역 전체 높이 사용 */
+                padding: 0; /* body 패딩 때문에 0으로 설정 */
             }
 
             .game-area .container {
-                height: calc(100vh - 60px);
+                height: 100%; /* 부모 높이에 맞춤 */
                 border-radius: 20px;
                 box-shadow: 0 15px 40px rgba(0,0,0,0.4);
             }
@@ -1180,11 +1189,6 @@
 
     <div id="game-area" class="game-area">
         <div class="container">
-            <div class="header">
-                <h1>🎯 밈주머니 빙고 게임!</h1>
-                <p>게임 진행 중</p>
-            </div>
-            
             <div class="game-content">
                 <div class="game-status">
                     <div class="status-text">방 코드: <span class="room-code-display" id="current-room-code">ABC123</span></div>
