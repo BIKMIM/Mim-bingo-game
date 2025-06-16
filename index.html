@@ -238,31 +238,44 @@
             cursor: pointer;
             transition: all 0.3s;
             color: #4a5568;
-            word-break: break-all;
+            word-break: break-all; /* 긴 텍스트 강제 줄바꿈 (유지) */
             text-align: center;
             padding: 5px;
+            
+            /* [핵심 수정 1] 화면 움찔거림(flicker) 방지 */
+            overflow: hidden; 
+            
+            /* [핵심 수정 2] 패딩으로 인한 크기 변경 방지 */
+            box-sizing: border-box; 
         }
 
         .bingo-cell:hover {
             background: #cbd5e0;
         }
 
-        /* Flipped (체크됨) 상태 */
-        .bingo-cell.flipped {
-            background: #667eea;
+        /* Flipped (체크됨) 및 Failed (실패) 상태 */
+        .bingo-cell.flipped,
+        .bingo-cell.failed {
             color: white;
-            font-size: 12px;
-            line-height: 1.2; 
+            
+            /* [핵심 수정 3] 동적/반응형 폰트 크기 적용 */
+            /* 화면 너비에 따라 폰트 크기를 8px ~ 13px 사이에서 유연하게 조절합니다. */
+            font-size: clamp(8px, 3vw, 13px);
+            
+            /* [핵심 수정 4] 줄 간격을 조절하여 가독성 확보 */
+            line-height: 1.15; 
         }
 
-        /* Failed (실패) 상태 */
+        /* Flipped (체크됨) 상태 고유 스타일 */
+        .bingo-cell.flipped {
+            background: #667eea;
+        }
+
+        /* Failed (실패) 상태 고유 스타일 */
         .bingo-cell.failed {
             background: #f56565;
-            color: white;
             text-decoration: line-through;
             opacity: 0.7;
-            font-size: 12px;
-            line-height: 1.2; 
         }
 
         /* 게임 상태 표시 */
