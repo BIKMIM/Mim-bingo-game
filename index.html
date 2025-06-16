@@ -586,7 +586,7 @@
             <h1>🎯 밈주머니 빙고 게임!</h1>
             <p>밈주머니와 함께 즐기는 쐐기 빙고!</p>
             <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
-                v4.91 - 로그인 상태 개선
+                v4.92 - 미션 기능 개선
             </div>
         </div>
 
@@ -659,8 +659,8 @@
             <div class="missions-section">
                 <h3>📝 미션 텍스트</h3>
                 <div class="mission-input-area">
-                    <input type="text" class="mission-input" id="mission-input" placeholder="미션 내용을 입력하세요" maxlength="20">
-                    <button class="btn btn-primary" onclick="addMission()">추가</button>
+                    <input type="text" class="mission-input" id="mission-input" placeholder="미션 내용을 입력하세요" maxlength="50">
+                    <button class="btn btn-primary" id="add-mission-btn" onclick="addMission()">추가</button>
                 </div>
                 <div class="button-group" style="margin-bottom: 15px;">
                     <button class="btn btn-secondary" onclick="saveMissions()">미션 저장</button>
@@ -1101,9 +1101,8 @@
                     }
                     updatePlayersDisplay();
                     
-                    if (!gameState.isHost && roomData.missions) {
-                        gameState.missions = roomData.missions;
-                    }
+                    // 호스트가 아니더라도 Firebase에서 미션 목록을 받아와 업데이트
+                    gameState.missions = roomData.missions || [];
                     updateMissionsDisplay();
 
                     if (gameState.gameStarted) {
@@ -1154,12 +1153,19 @@
                             document.getElementById('turn-end-button').style.display = 'block';
                         }
                     }
+                    // 미션 추가 버튼 활성화/비활성화
+                    document.getElementById('add-mission-btn').disabled = !gameState.roomCode;
                 }
             });
         }
 
         // 미션 추가
         async function addMission() {
+            if (!gameState.roomCode) {
+                showMessage('먼저 방에 입장하거나 생성해주세요!', 'error');
+                return;
+            }
+
             const missionInput = document.getElementById('mission-input');
             const mission = missionInput.value.trim();
             
@@ -1168,40 +1174,58 @@
                 return;
             }
             
-            if (gameState.missions.includes(mission)) {
+            // Firebase에서 최신 미션 목록을 가져와 중복 확인
+            const snapshot = await gameState.roomRef.child('missions').once('value');
+            const currentMissionsInFirebase = snapshot.val() || [];
+
+            if (currentMissionsInFirebase.includes(mission)) {
                 showMessage('이미 추가된 미션입니다!', 'error');
                 return;
             }
             
             try {
-                const newMissions = [...gameState.missions, mission];
-                gameState.missions = newMissions;
-                updateMissionsDisplay();
-                
-                if (gameState.isHost && gameState.roomRef) {
-                    await gameState.roomRef.child('missions').set(newMissions);
-                }
+                // 트랜잭션을 사용하여 동시성 문제 방지
+                await gameState.roomRef.child('missions').transaction((currentData) => {
+                    const newMissions = currentData || [];
+                    if (!newMissions.includes(mission)) {
+                        newMissions.push(mission);
+                    }
+                    return newMissions;
+                });
                 
                 missionInput.value = '';
+                showMessage('미션이 추가되었습니다! ✨', 'success');
                 
             } catch (error) {
                 showMessage('미션 추가에 실패했습니다: ' + error.message, 'error');
+                console.error('미션 추가 오류:', error);
             }
         }
 
         // 미션 삭제
         async function deleteMission(index) {
-            try {
-                const newMissions = gameState.missions.filter((_, i) => i !== index);
-                gameState.missions = newMissions;
-                updateMissionsDisplay();
+            if (!gameState.isHost) {
+                showMessage('방장만 미션을 삭제할 수 있습니다!', 'error');
+                return;
+            }
+            if (!gameState.roomCode) {
+                showMessage('방에 입장하지 않았습니다!', 'error');
+                return;
+            }
 
-                if (gameState.isHost && gameState.roomRef) {
-                    await gameState.roomRef.child('missions').set(newMissions);
-                }
-                
+            try {
+                // Firebase에서 최신 미션 목록을 가져와 삭제
+                await gameState.roomRef.child('missions').transaction((currentMissions) => {
+                    if (currentMissions && currentMissions.length > index) {
+                        const newMissions = currentMissions.filter((_, i) => i !== index);
+                        return newMissions;
+                    }
+                    return undefined; // 트랜잭션 취소
+                });
+                showMessage('미션이 삭제되었습니다! 🗑️', 'success');
             } catch (error) {
                 showMessage('미션 삭제에 실패했습니다: ' + error.message, 'error');
+                console.error('미션 삭제 오류:', error);
             }
         }
 
@@ -1679,8 +1703,22 @@ function checkBingoPossibility() {
             
             if (gameState.roomRef && gameState.playerUID) {
                 gameState.roomRef.off();
-                gameState.roomRef.child('players').child(gameState.playerUID).remove();
-                console.log(`플레이어 ${gameState.playerName}이(가) 방을 나갑니다. UID: ${gameState.playerUID}`);
+                // 플레이어가 방을 나갈 때만 Firebase에서 플레이어 정보 삭제
+                // 호스트가 나갈 때 방 전체를 삭제하는 로직은 추가하지 않음 (게임의 일관성을 위해)
+                gameState.roomRef.child('players').child(gameState.playerUID).remove()
+                    .then(() => {
+                        console.log(`플레이어 ${gameState.playerName}이(가) 방을 나갑니다. UID: ${gameState.playerUID}`);
+                        // playerOrderUids 배열에서도 해당 UID 제거
+                        gameState.roomRef.child('playerOrderUids').transaction((currentUids) => {
+                            if (currentUids) {
+                                return currentUids.filter(uid => uid !== gameState.playerUID);
+                            }
+                            return [];
+                        });
+                    })
+                    .catch(error => {
+                        console.error("방 나가기 중 오류 발생:", error);
+                    });
             }
             
             const oldPlayerUID = gameState.playerUID;
@@ -1691,6 +1729,7 @@ function checkBingoPossibility() {
                 playerUID: oldPlayerUID,
                 players: {},
                 missions: [],
+                isAuthReady: true, // 로그인 상태 유지
                 winCondition: 1,
                 boardSize: 3,
                 maxPlayers: 2,
@@ -1702,8 +1741,7 @@ function checkBingoPossibility() {
                 missionMap: {},
                 canClaimBingo: false,
                 flippedNumbers: [],
-                hasMadeMoveInTurn: false,
-                isAuthReady: true
+                hasMadeMoveInTurn: false
             };
             
             // UI 초기화
@@ -1762,7 +1800,12 @@ function checkBingoPossibility() {
                 return;
             }
             
-            playersList.innerHTML = playersArray.map(player =>
+            // playerList (UID 순서)에 따라 정렬하여 표시
+            const sortedPlayers = gameState.playerList
+                .map(uid => gameState.players[uid])
+                .filter(player => player !== undefined); // 방을 나간 플레이어는 제외
+
+            playersList.innerHTML = sortedPlayers.map(player =>
                 `<div class="player-item ${player.isHost ? 'host' : ''}">
                     ${player.isHost ? '👑' : '👤'} ${player.name} ${player.isHost ? '(방장)' : ''}
                 </div>`
@@ -2047,14 +2090,29 @@ function checkBingoPossibility() {
             });
 
             loadMissions();
+            // 미션 추가 버튼 초기 상태 설정
+            document.getElementById('add-mission-btn').disabled = !gameState.roomCode;
         });
 
         // 페이지 이탈 시 정리
         window.addEventListener('beforeunload', async function() {
             if (gameState.roomRef && gameState.playerUID) {
                 gameState.roomRef.off();
-                await gameState.roomRef.child('players').child(gameState.playerUID).remove();
-                console.log(`플레이어 ${gameState.playerName}이(가) 방을 나갑니다. UID: ${gameState.playerUID}`);
+                // 플레이어가 방을 나갈 때만 Firebase에서 플레이어 정보 삭제
+                // 호스트가 나갈 때 방 전체를 삭제하는 로직은 추가하지 않음 (게임의 일관성을 위해)
+                const playerRef = gameState.roomRef.child('players').child(gameState.playerUID);
+                const playerSnapshot = await playerRef.once('value');
+                if (playerSnapshot.exists()) {
+                    await playerRef.remove();
+                    console.log(`플레이어 ${gameState.playerName}이(가) 방을 나갑니다. UID: ${gameState.playerUID}`);
+                    // playerOrderUids 배열에서도 해당 UID 제거
+                    await gameState.roomRef.child('playerOrderUids').transaction((currentUids) => {
+                        if (currentUids) {
+                            return currentUids.filter(uid => uid !== gameState.playerUID);
+                        }
+                        return [];
+                    });
+                }
             }
         });
     </script>
