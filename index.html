@@ -1452,103 +1452,104 @@
         }
 
         // 빙고 가능 여부 확인
-        function checkBingoPossibility() {
-            const board = gameState.bingoBoard;
-            const size = gameState.boardSize;
-            const requiredLines = gameState.winCondition;
-            let completedLines = 0;
-            const bingoButton = document.getElementById('bingo-button');
-            const turnEndButton = document.getElementById('turn-end-button');
-            const currentPlayerUid = gameState.playerList[gameState.currentTurn];
-            const isMyTurn = currentPlayerUid === gameState.playerUID;
+function checkBingoPossibility() {
+    const board = gameState.bingoBoard;
+    const size = gameState.boardSize;
+    const requiredLines = gameState.winCondition;
+    let completedLines = 0;
+    const bingoButton = document.getElementById('bingo-button');
+    const turnEndButton = document.getElementById('turn-end-button');
+    const currentPlayerUid = gameState.playerList[gameState.currentTurn];
+    const isMyTurn = currentPlayerUid === gameState.playerUID;
 
-            if (!gameState.gameStarted || !gameState.roomRef) {
-                gameState.canClaimBingo = false;
-                bingoButton.disabled = true;
-                turnEndButton.disabled = true;
-                return;
-            }
+    if (!gameState.gameStarted || !gameState.roomRef) {
+        gameState.canClaimBingo = false;
+        bingoButton.disabled = true;
+        turnEndButton.disabled = true;
+        return;
+    }
 
-            gameState.roomRef.once('value').then(snapshot => {
-                const roomData = snapshot.val();
-                if (!roomData) return;
+    gameState.roomRef.once('value').then(snapshot => {
+        const roomData = snapshot.val();
+        if (!roomData) return;
 
-                if (roomData.gameEnded || roomData.winner) {
-                    bingoButton.disabled = true;
-                    turnEndButton.disabled = true;
-                    bingoButton.style.display = 'none';
-                    turnEndButton.style.display = 'none';
-                    return;
-                } else {
-                    bingoButton.style.display = 'block';
-                    turnEndButton.style.display = 'block';
-                }
-
-                // 빙고 라인 체크
-                for (let i = 0; i < size; i++) {
-                    let rowComplete = true;
-                    for (let j = 0; j < size; j++) {
-                        const index = i * size + j;
-                        if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
-                            rowComplete = false;
-                            break;
-                        }
-                    }
-                    if (rowComplete) completedLines++;
-                }
-
-                for (let j = 0; j < size; j++) {
-                    let colComplete = true;
-                    for (let i = 0; i < size; i++) {
-                        const index = i * size + j;
-                        if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
-                            colComplete = false;
-                            break;
-                        }
-                    }
-                    if (colComplete) completedLines++;
-                }
-
-                let diag1Complete = true;
-                for (let i = 0; i < size; i++) {
-                    const index = i * size + i;
-                    if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
-                        diag1Complete = false;
-                        break;
-                    }
-                }
-                if (diag1Complete) completedLines++;
-
-                let diag2Complete = true;
-                for (let i = 0; i < size; i++) {
-                    const index = i * size + (size - 1 - i);
-                    if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
-                        diag2Complete = false;
-                        break;
-                    }
-                }
-                if (diag2Complete) completedLines++;
-                
-                console.log(`${gameState.playerName}: 현재 완성된 라인 수 = ${completedLines}`);
-
-                if (completedLines >= requiredLines) {
-                    gameState.canClaimBingo = true;
-                    bingoButton.disabled = !isMyTurn || roomData.gameEnded || roomData.winner;
-                } else {
-                    gameState.canClaimBingo = false;
-                    bingoButton.disabled = true;
-                }
-
-                turnEndButton.disabled = !isMyTurn || roomData.gameEnded || roomData.winner || !gameState.hasMadeMoveInTurn;
-
-            }).catch(error => {
-                console.error("Error checking bingo possibility:", error);
-                showMessage("빙고/턴 상태 확인 중 오류 발생!", "error");
-                bingoButton.disabled = true;
-                turnEndButton.disabled = true;
-            });
+        if (roomData.gameEnded || roomData.winner) {
+            bingoButton.disabled = true;
+            turnEndButton.disabled = true;
+            bingoButton.style.display = 'none';
+            turnEndButton.style.display = 'none';
+            return;
+        } else {
+            bingoButton.style.display = 'block';
+            turnEndButton.style.display = 'block';
         }
 
+        // 빙고 라인 체크
+        for (let i = 0; i < size; i++) {
+            let rowComplete = true;
+            for (let j = 0; j < size; j++) {
+                const index = i * size + j;
+                if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
+                    rowComplete = false;
+                    break;
+                }
+            }
+            if (rowComplete) completedLines++;
+        }
+
+        for (let j = 0; j < size; j++) {
+            let colComplete = true;
+            for (let i = 0; i < size; i++) {
+                const index = i * size + j;
+                if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
+                    colComplete = false;
+                    break;
+                }
+            }
+            if (colComplete) completedLines++;
+        }
+
+        let diag1Complete = true;
+        for (let i = 0; i < size; i++) {
+            const index = i * size + i;
+            if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
+                diag1Complete = false;
+                break;
+            }
+        }
+        if (diag1Complete) completedLines++;
+
+        let diag2Complete = true;
+        for (let i = 0; i < size; i++) {
+            const index = i * size + (size - 1 - i);
+            if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
+                diag2Complete = false;
+                break;
+            }
+        }
+        if (diag2Complete) completedLines++;
+        
+        console.log(`${gameState.playerName}: 현재 완성된 라인 수 = ${completedLines}`);
+
+        if (completedLines >= requiredLines) {
+            gameState.canClaimBingo = true;
+            // 턴 조건 (!isMyTurn)을 제거하여, 빙고 조건만 충족하면 버튼이 활성화되도록 변경
+            bingoButton.disabled = roomData.gameEnded || roomData.winner; 
+        } else {
+            gameState.canClaimBingo = false;
+            bingoButton.disabled = true;
+        }
+
+        // 턴 종료 버튼은 여전히 자신의 턴에만 활성화됩니다.
+        turnEndButton.disabled = !isMyTurn || roomData.gameEnded || roomData.winner || !gameState.hasMadeMoveInTurn;
+
+    }).catch(error => {
+        console.error("Error checking bingo possibility:", error);
+        showMessage("빙고/턴 상태 확인 중 오류 발생!", "error");
+        bingoButton.disabled = true;
+        turnEndButton.disabled = true;
+    });
+}
         // 턴 종료
         async function turnEnd() {
             const currentPlayerUid = gameState.playerList[gameState.currentTurn];
