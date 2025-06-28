@@ -4,27 +4,82 @@ class UIManager {
         this.setupEventListeners();
     }
 
-    setupEventListeners() {
-        const backToSetupBtn = document.getElementById('back-to-setup-btn');
-        
-        if (backToSetupBtn) backToSetupBtn.addEventListener('click', () => this.backToSetup());
-        
-        // 보드 크기 변경 이벤트 - 개선된 버전
-        document.querySelectorAll('input[name="board-size"]').forEach(radio => {
-            radio.addEventListener('change', () => {
-                const newSize = parseInt(radio.value);
-                gameState.boardSize = newSize;
-                
-                // 미션 매니저의 디스플레이 업데이트
-                missionManager.updateMissionsDisplay();
-                
-                // 필요한 미션 개수 메시지 업데이트
-                const requiredMissions = newSize * newSize;
-                showMessage(`${newSize}x${newSize} 보드에는 최소 ${requiredMissions}개의 미션이 필요합니다.`, 'info');
-            });
-        });
-    }
+    // UI 관리 모듈에서 수정된 부분
+setupEventListeners() {
+    const backToSetupBtn = document.getElementById('back-to-setup-btn');
+    
+    if (backToSetupBtn) backToSetupBtn.addEventListener('click', () => this.backToSetup());
+    
+    // 보드 크기 변경 이벤트 - 수정된 버전 (Firebase 업데이트 추가)
+    document.querySelectorAll('input[name="board-size"]').forEach(radio => {
+        radio.addEventListener('change', async () => {
+            if (!gameState.isHost) {
+                showMessage('방장만 게임 설정을 변경할 수 있습니다!', 'error');
+                // 이전 선택으로 되돌리기
+                const currentBoardSizeRadio = document.querySelector(`input[name="board-size"][value="${gameState.boardSize}"]`);
+                if (currentBoardSizeRadio) {
+                    currentBoardSizeRadio.checked = true;
+                }
+                return;
+            }
 
+            const newSize = parseInt(radio.value);
+            gameState.boardSize = newSize;
+            
+            // Firebase에 보드 크기 업데이트
+            if (gameState.roomRef) {
+                try {
+                    await gameState.roomRef.update({
+                        boardSize: newSize
+                    });
+                    console.log(`보드 크기가 ${newSize}x${newSize}로 변경되었습니다.`);
+                } catch (error) {
+                    console.error('보드 크기 업데이트 실패:', error);
+                    showMessage('보드 크기 변경에 실패했습니다.', 'error');
+                }
+            }
+            
+            // 미션 매니저의 디스플레이 업데이트
+            missionManager.updateMissionsDisplay();
+            
+            // 필요한 미션 개수 메시지 업데이트
+            const requiredMissions = newSize * newSize;
+            showMessage(`${newSize}x${newSize} 보드에는 최소 ${requiredMissions}개의 미션이 필요합니다.`, 'info');
+        });
+    });
+
+    // 승리 조건 변경 이벤트 추가
+    document.querySelectorAll('input[name="win-condition"]').forEach(radio => {
+        radio.addEventListener('change', async () => {
+            if (!gameState.isHost) {
+                showMessage('방장만 게임 설정을 변경할 수 있습니다!', 'error');
+                // 이전 선택으로 되돌리기
+                const currentWinConditionRadio = document.querySelector(`input[name="win-condition"][value="${gameState.winCondition}"]`);
+                if (currentWinConditionRadio) {
+                    currentWinConditionRadio.checked = true;
+                }
+                return;
+            }
+
+            const newWinCondition = parseInt(radio.value);
+            gameState.winCondition = newWinCondition;
+            
+            // Firebase에 승리 조건 업데이트
+            if (gameState.roomRef) {
+                try {
+                    await gameState.roomRef.update({
+                        winCondition: newWinCondition
+                    });
+                    console.log(`승리 조건이 ${newWinCondition}줄 빙고로 변경되었습니다.`);
+                    showMessage(`승리 조건이 ${newWinCondition}줄 빙고로 변경되었습니다.`, 'success');
+                } catch (error) {
+                    console.error('승리 조건 업데이트 실패:', error);
+                    showMessage('승리 조건 변경에 실패했습니다.', 'error');
+                }
+            }
+        });
+    });
+}
     // 상태 메시지 표시
     showMessage(message, type = 'info') {
         const statusDiv = document.getElementById('status-message');
