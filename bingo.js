@@ -12,77 +12,108 @@ class BingoManager {
         if (bingoBtn) bingoBtn.addEventListener('click', () => this.claimBingo());
     }
 
-    async startGame() {
-    console.log('startGame 함수 시작');
-    if (!gameState.roomCode) {
-        showMessage('먼저 방을 생성하거나 입장해주세요!', 'error');
-        return;
-    }
-    
-    const requiredMissions = gameState.boardSize * gameState.boardSize;
-    console.log(`필요 미션 수: ${requiredMissions}, 현재 미션 수: ${gameState.missions.length}`);
-    if (gameState.missions.length < requiredMissions) {
-        showMessage(`미션이 최소 ${requiredMissions}개 필요합니다! 현재 ${gameState.missions.length}개`, 'error');
-        return;
-    }
-
-    if (!gameState.isHost) {
-        showMessage('방장만 게임을 시작할 수 있습니다!', 'error');
-        return;
-    }
-    
-    console.log(`현재 플레이어 수: ${Object.keys(gameState.players).length}`);
-    if (Object.keys(gameState.players).length < 2) {
-        showMessage('게임을 시작하려면 최소 2명 이상의 플레이어가 필요합니다!', 'error');
-        return;
-    }
-    
-    console.log('미션 맵 생성 시작');
-    const shuffledMissions = [...gameState.missions].sort(() => Math.random() - 0.5).slice(0, requiredMissions);
-    const shuffledNumbersForMap = Array.from({length: requiredMissions}, (_, i) => i + 1).sort(() => Math.random() - 0.5);
-
-    const missionMap = {};
-    for (let i = 0; i < requiredMissions; i++) {
-        missionMap[shuffledNumbersForMap[i]] = shuffledMissions[i];
-    }
-    console.log('생성된 missionMap:', missionMap);
-    
-    try {
-        // gameState에서 직접 값을 사용 (DOM에서 읽지 않음)
-        const winCondition = gameState.winCondition;
-        const selectedBoardSize = gameState.boardSize;
-        const selectedMaxPlayers = gameState.maxPlayers;
+    // 미션이 부족할 때 자동으로 충분한 미션을 생성하는 함수
+    generateSufficientMissions(requiredCount) {
+        const availableMissions = [...gameState.missions];
+        const resultMissions = [];
         
-        console.log(`게임 시작 설정: 보드크기=${selectedBoardSize}, 승리조건=${winCondition}, 최대플레이어=${selectedMaxPlayers}`);
+        // 현재 미션들을 먼저 추가
+        resultMissions.push(...availableMissions);
         
-        console.log('Firebase room 업데이트 시도');
-        await gameState.roomRef.update({
-            gameStarted: true,
-            winCondition: winCondition,
-            boardSize: selectedBoardSize,
-            maxPlayers: selectedMaxPlayers,
-            startedAt: firebase.database.ServerValue.TIMESTAMP,
-            flippedNumbers: {},
-            winner: null,
-            gameEnded: false,
-            missionMap: missionMap,
-            bingoClaimed: null
-        });
-        console.log('Firebase room 업데이트 성공');
-
-        const updates = {};
-        for (const playerUid in gameState.players) {
-            updates[`players/${playerUid}/boardState`] = {};
+        // 부족한 만큼 반복해서 추가 (번호를 붙여서 구분)
+        let round = 2;
+        while (resultMissions.length < requiredCount) {
+            for (let i = 0; i < availableMissions.length && resultMissions.length < requiredCount; i++) {
+                resultMissions.push(`${availableMissions[i]} (${round}회차)`);
+            }
+            round++;
         }
-        await gameState.roomRef.update(updates);
-        console.log('플레이어 boardState 초기화 성공');
         
-    } catch (error) {
-        showMessage('게임 시작에 실패했습니다: ' + error.message, 'error');
-        console.error('게임 시작 오류:', error);
+        return resultMissions.slice(0, requiredCount);
     }
-    console.log('startGame 함수 종료');
-}
+
+    async startGame() {
+        console.log('startGame 함수 시작');
+        if (!gameState.roomCode) {
+            showMessage('먼저 방을 생성하거나 입장해주세요!', 'error');
+            return;
+        }
+        
+        const requiredMissions = gameState.boardSize * gameState.boardSize;
+        console.log(`필요 미션 수: ${requiredMissions}, 현재 미션 수: ${gameState.missions.length}`);
+        
+        // 미션이 부족한 경우 자동으로 생성
+        let missionsToUse = [];
+        if (gameState.missions.length < requiredMissions) {
+            if (gameState.missions.length === 0) {
+                showMessage('미션이 하나도 없습니다! 먼저 미션을 추가해주세요.', 'error');
+                return;
+            }
+            
+            // 미션 자동 생성
+            missionsToUse = this.generateSufficientMissions(requiredMissions);
+            showMessage(`미션이 ${requiredMissions}개 필요하지만 ${gameState.missions.length}개만 있어서, 자동으로 미션을 반복 생성했습니다!`, 'info');
+        } else {
+            missionsToUse = [...gameState.missions];
+        }
+
+        if (!gameState.isHost) {
+            showMessage('방장만 게임을 시작할 수 있습니다!', 'error');
+            return;
+        }
+        
+        console.log(`현재 플레이어 수: ${Object.keys(gameState.players).length}`);
+        if (Object.keys(gameState.players).length < 2) {
+            showMessage('게임을 시작하려면 최소 2명 이상의 플레이어가 필요합니다!', 'error');
+            return;
+        }
+        
+        console.log('미션 맵 생성 시작');
+        const shuffledMissions = [...missionsToUse].sort(() => Math.random() - 0.5).slice(0, requiredMissions);
+        const shuffledNumbersForMap = Array.from({length: requiredMissions}, (_, i) => i + 1).sort(() => Math.random() - 0.5);
+
+        const missionMap = {};
+        for (let i = 0; i < requiredMissions; i++) {
+            missionMap[shuffledNumbersForMap[i]] = shuffledMissions[i];
+        }
+        console.log('생성된 missionMap:', missionMap);
+        
+        try {
+            // gameState에서 직접 값을 사용 (DOM에서 읽지 않음)
+            const winCondition = gameState.winCondition;
+            const selectedBoardSize = gameState.boardSize;
+            const selectedMaxPlayers = gameState.maxPlayers;
+            
+            console.log(`게임 시작 설정: 보드크기=${selectedBoardSize}, 승리조건=${winCondition}, 최대플레이어=${selectedMaxPlayers}`);
+            
+            console.log('Firebase room 업데이트 시도');
+            await gameState.roomRef.update({
+                gameStarted: true,
+                winCondition: winCondition,
+                boardSize: selectedBoardSize,
+                maxPlayers: selectedMaxPlayers,
+                startedAt: firebase.database.ServerValue.TIMESTAMP,
+                flippedNumbers: {},
+                winner: null,
+                gameEnded: false,
+                missionMap: missionMap,
+                bingoClaimed: null
+            });
+            console.log('Firebase room 업데이트 성공');
+
+            const updates = {};
+            for (const playerUid in gameState.players) {
+                updates[`players/${playerUid}/boardState`] = {};
+            }
+            await gameState.roomRef.update(updates);
+            console.log('플레이어 boardState 초기화 성공');
+            
+        } catch (error) {
+            showMessage('게임 시작에 실패했습니다: ' + error.message, 'error');
+            console.error('게임 시작 오류:', error);
+        }
+        console.log('startGame 함수 종료');
+    }
 
     
     generateBingoBoard() {
