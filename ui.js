@@ -5,25 +5,25 @@ class UIManager {
     }
 
     setupEventListeners() {
-    const backToSetupBtn = document.getElementById('back-to-setup-btn');
-    
-    if (backToSetupBtn) backToSetupBtn.addEventListener('click', () => this.backToSetup());
-    
-    // 보드 크기 변경 이벤트 - 개선된 버전
-    document.querySelectorAll('input[name="board-size"]').forEach(radio => {
-        radio.addEventListener('change', () => {
-            const newSize = parseInt(radio.value);
-            gameState.boardSize = newSize;
-            
-            // 미션 매니저의 디스플레이 업데이트
-            missionManager.updateMissionsDisplay();
-            
-            // 필요한 미션 개수 메시지 업데이트
-            const requiredMissions = newSize * newSize;
-            showMessage(`${newSize}x${newSize} 보드에는 최소 ${requiredMissions}개의 미션이 필요합니다.`, 'info');
+        const backToSetupBtn = document.getElementById('back-to-setup-btn');
+        
+        if (backToSetupBtn) backToSetupBtn.addEventListener('click', () => this.backToSetup());
+        
+        // 보드 크기 변경 이벤트 - 개선된 버전
+        document.querySelectorAll('input[name="board-size"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                const newSize = parseInt(radio.value);
+                gameState.boardSize = newSize;
+                
+                // 미션 매니저의 디스플레이 업데이트
+                missionManager.updateMissionsDisplay();
+                
+                // 필요한 미션 개수 메시지 업데이트
+                const requiredMissions = newSize * newSize;
+                showMessage(`${newSize}x${newSize} 보드에는 최소 ${requiredMissions}개의 미션이 필요합니다.`, 'info');
+            });
         });
-    });
-}
+    }
 
     // 상태 메시지 표시
     showMessage(message, type = 'info') {
@@ -82,14 +82,19 @@ class UIManager {
         ).join('');
 
         const startBtn = document.getElementById('start-game-btn');
+        const gameOptionsSection = document.getElementById('game-options-section');
+        
+        // 게스트인 경우 게임 옵션 숨기기
         if (gameState.isHost) {
             startBtn.style.display = 'block';
             startBtn.textContent = '🎮 게임 시작!';
             startBtn.disabled = false;
+            gameOptionsSection.style.display = 'block';
         } else {
             startBtn.style.display = 'block';
             startBtn.textContent = '방장이 게임을 시작하기를 기다리는 중...';
             startBtn.disabled = true;
+            gameOptionsSection.style.display = 'none'; // 게스트는 게임 옵션 숨김
         }
     }
 
@@ -188,7 +193,7 @@ class UIManager {
         document.getElementById('win-1').checked = true;
         document.getElementById('max-players-create').value = 2;
         document.getElementById('flipped-numbers-count').textContent = '0';
-        document.getElementById('game-options-section').classList.remove('hidden');
+        document.getElementById('game-options-section').style.display = 'block'; // 다시 보이게 함
 
         missionManager.loadMissions();
         this.updateButtonStates();
