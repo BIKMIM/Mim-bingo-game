@@ -48,15 +48,17 @@ class BingoManager {
     console.log('생성된 missionMap:', missionMap);
     
     try {
-        // 승리 조건과 보드 크기를 gameState에서 가져오기 (DOM에서 읽지 않음)
-        const winCondition = document.querySelector('input[name="win-condition"]:checked')?.value || gameState.winCondition;
-        const selectedBoardSize = gameState.boardSize; // gameState에서 직접 사용
+        // gameState에서 직접 값을 사용 (DOM에서 읽지 않음)
+        const winCondition = gameState.winCondition;
+        const selectedBoardSize = gameState.boardSize;
         const selectedMaxPlayers = gameState.maxPlayers;
+        
+        console.log(`게임 시작 설정: 보드크기=${selectedBoardSize}, 승리조건=${winCondition}, 최대플레이어=${selectedMaxPlayers}`);
         
         console.log('Firebase room 업데이트 시도');
         await gameState.roomRef.update({
             gameStarted: true,
-            winCondition: parseInt(winCondition),
+            winCondition: winCondition,
             boardSize: selectedBoardSize,
             maxPlayers: selectedMaxPlayers,
             startedAt: firebase.database.ServerValue.TIMESTAMP,
@@ -82,6 +84,7 @@ class BingoManager {
     console.log('startGame 함수 종료');
 }
 
+    
     generateBingoBoard() {
         const size = gameState.boardSize;
         const totalCells = size * size;
