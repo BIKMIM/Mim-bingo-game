@@ -84,18 +84,81 @@ class UIManager {
         const startBtn = document.getElementById('start-game-btn');
         const gameOptionsSection = document.getElementById('game-options-section');
         
-        // 게스트인 경우 게임 옵션 숨기기
         if (gameState.isHost) {
             startBtn.style.display = 'block';
             startBtn.textContent = '🎮 게임 시작!';
             startBtn.disabled = false;
             gameOptionsSection.style.display = 'block';
+            
+            // 방장일 때는 모든 옵션 활성화
+            this.setGameOptionsEnabled(true);
         } else {
             startBtn.style.display = 'block';
             startBtn.textContent = '방장이 게임을 시작하기를 기다리는 중...';
             startBtn.disabled = true;
-            gameOptionsSection.style.display = 'none'; // 게스트는 게임 옵션 숨김
+            gameOptionsSection.style.display = 'block'; // 게스트도 보이게 하되
+            
+            // 게스트일 때는 모든 옵션 비활성화하고 현재 설정 표시
+            this.setGameOptionsEnabled(false);
+            this.updateGameOptionsDisplay();
         }
+    }
+
+    // 게임 옵션 활성화/비활성화
+    setGameOptionsEnabled(enabled) {
+        const boardSizeRadios = document.querySelectorAll('input[name="board-size"]');
+        const winConditionRadios = document.querySelectorAll('input[name="win-condition"]');
+        
+        boardSizeRadios.forEach(radio => {
+            radio.disabled = !enabled;
+        });
+        
+        winConditionRadios.forEach(radio => {
+            radio.disabled = !enabled;
+        });
+        
+        // 게스트일 때 시각적 표시 추가
+        const gameOptionsSection = document.getElementById('game-options-section');
+        if (!enabled) {
+            gameOptionsSection.style.opacity = '0.7';
+            gameOptionsSection.style.pointerEvents = 'none';
+            
+            // 게스트용 설명 텍스트 추가
+            let guestNotice = gameOptionsSection.querySelector('.guest-notice');
+            if (!guestNotice) {
+                guestNotice = document.createElement('div');
+                guestNotice.className = 'guest-notice';
+                guestNotice.style.cssText = 'color: #667eea; font-size: 14px; text-align: center; margin-top: 10px; font-style: italic; font-weight: bold;';
+                guestNotice.textContent = '📋 게임 설정은 방장이 결정합니다 (현재 설정이 표시됨)';
+                gameOptionsSection.appendChild(guestNotice);
+            }
+        } else {
+            gameOptionsSection.style.opacity = '1';
+            gameOptionsSection.style.pointerEvents = 'auto';
+            
+            // 방장일 때 게스트 안내 텍스트 제거
+            const guestNotice = gameOptionsSection.querySelector('.guest-notice');
+            if (guestNotice) {
+                guestNotice.remove();
+            }
+        }
+    }
+
+    // 게임 옵션 화면 업데이트 (방장의 설정을 게스트에게 반영)
+    updateGameOptionsDisplay() {
+        // 보드 크기 설정 반영
+        const boardSizeRadio = document.querySelector(`input[name="board-size"][value="${gameState.boardSize}"]`);
+        if (boardSizeRadio) {
+            boardSizeRadio.checked = true;
+        }
+        
+        // 승리 조건 설정 반영 
+        const winConditionRadio = document.querySelector(`input[name="win-condition"][value="${gameState.winCondition}"]`);
+        if (winConditionRadio) {
+            winConditionRadio.checked = true;
+        }
+        
+        console.log(`게스트 UI 업데이트: 보드크기=${gameState.boardSize}, 승리조건=${gameState.winCondition}`);
     }
 
     // 게임 영역 표시
@@ -129,7 +192,7 @@ class UIManager {
             <button class="btn btn-primary" onclick="uiManager.closeWinnerMessage()">확인</button>
         `;
         overlay.appendChild(messageBox);
-        document.body.appendChild(overlay);
+        document.body.appendChild(messageBox);
     }
 
     // 승리 메시지 닫기
@@ -189,11 +252,23 @@ class UIManager {
             winnerOverlay.remove();
         }
 
+        // 기본값으로 리셋
         document.getElementById('size-3').checked = true;
         document.getElementById('win-1').checked = true;
         document.getElementById('max-players-create').value = 2;
         document.getElementById('flipped-numbers-count').textContent = '0';
-        document.getElementById('game-options-section').style.display = 'block'; // 다시 보이게 함
+        
+        // 게임 옵션 섹션 정상 상태로 복구
+        const gameOptionsSection = document.getElementById('game-options-section');
+        gameOptionsSection.style.display = 'block';
+        gameOptionsSection.style.opacity = '1';
+        gameOptionsSection.style.pointerEvents = 'auto';
+        
+        // 게스트 안내 텍스트 제거
+        const guestNotice = gameOptionsSection.querySelector('.guest-notice');
+        if (guestNotice) {
+            guestNotice.remove();
+        }
 
         missionManager.loadMissions();
         this.updateButtonStates();
@@ -226,9 +301,8 @@ class UIManager {
         const hintElement = document.getElementById('auto-join-hint');
         const createRoomControls = document.querySelector('.create-room-controls');
         const mainActionButtons = document.getElementById('main-action-buttons');
-        const gameOptionsSection = document.getElementById('game-options-section');
 
-        if (!joinSection || !roomCodeInput || !nameInput || !hintElement || !createRoomControls || !mainActionButtons || !gameOptionsSection) {
+        if (!joinSection || !roomCodeInput || !nameInput || !hintElement || !createRoomControls || !mainActionButtons) {
             console.error('❌ 필요한 DOM 요소를 찾을 수 없음. 재시도합니다.');
             setTimeout(() => this.performAutoJoin(roomCode), 100);
             return;
@@ -245,7 +319,7 @@ class UIManager {
         nameInput.placeholder = '닉네임을 입력하고 입장하세요!';
         
         hintElement.classList.remove('hidden');
-        gameOptionsSection.classList.add('hidden');
+        // 게임 옵션은 숨기지 않음 (방장의 설정을 보여주기 위해)
 
         if (document.activeElement !== nameInput) {
             nameInput.focus();
