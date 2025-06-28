@@ -1,6 +1,7 @@
 // 빙고 게임 로직 모듈
 class BingoManager {
     constructor() {
+        this.gameStarting = false; // 게임 시작 중복 방지 플래그
         this.setupEventListeners();
     }
 
@@ -8,8 +9,18 @@ class BingoManager {
         const startGameBtn = document.getElementById('start-game-btn');
         const bingoBtn = document.getElementById('bingo-button');
         
-        if (startGameBtn) startGameBtn.addEventListener('click', () => this.startGame());
-        if (bingoBtn) bingoBtn.addEventListener('click', () => this.claimBingo());
+        // 기존 이벤트 리스너 제거 후 새로 추가 (중복 방지)
+        if (startGameBtn) {
+            startGameBtn.removeEventListener('click', this.startGameHandler);
+            this.startGameHandler = () => this.startGame();
+            startGameBtn.addEventListener('click', this.startGameHandler);
+        }
+        
+        if (bingoBtn) {
+            bingoBtn.removeEventListener('click', this.bingoHandler);
+            this.bingoHandler = () => this.claimBingo();
+            bingoBtn.addEventListener('click', this.bingoHandler);
+        }
     }
 
     // 미션이 부족할 때 자동으로 충분한 미션을 생성하는 함수
@@ -34,51 +45,61 @@ class BingoManager {
 
     async startGame() {
         console.log('startGame 함수 시작');
-        if (!gameState.roomCode) {
-            showMessage('먼저 방을 생성하거나 입장해주세요!', 'error');
+        
+        // 중복 실행 방지
+        if (this.gameStarting) {
+            console.log('이미 게임 시작 중입니다. 중복 실행 방지.');
             return;
         }
+        this.gameStarting = true;
         
-        const requiredMissions = gameState.boardSize * gameState.boardSize;
-        console.log(`필요 미션 수: ${requiredMissions}, 현재 미션 수: ${gameState.missions.length}`);
-        
-        // 미션이 부족한 경우 자동으로 생성
-        let missionsToUse = [];
-        if (gameState.missions.length < requiredMissions) {
-            if (gameState.missions.length === 0) {
-                showMessage('미션이 하나도 없습니다! 먼저 미션을 추가해주세요.', 'error');
+        try {
+            if (!gameState.roomCode) {
+                showMessage('먼저 방을 생성하거나 입장해주세요!', 'error');
                 return;
             }
             
-            // 미션 자동 생성
-            missionsToUse = this.generateSufficientMissions(requiredMissions);
-            showMessage(`미션이 ${requiredMissions}개 필요하지만 ${gameState.missions.length}개만 있어서, 자동으로 미션을 반복 생성했습니다!`, 'info');
-        } else {
-            missionsToUse = [...gameState.missions];
-        }
+            if (!gameState.isHost) {
+                showMessage('방장만 게임을 시작할 수 있습니다!', 'error');
+                return;
+            }
+            
+            console.log(`현재 플레이어 수: ${Object.keys(gameState.players).length}`);
+            if (Object.keys(gameState.players).length < 2) {
+                showMessage('게임을 시작하려면 최소 2명 이상의 플레이어가 필요합니다!', 'error');
+                return;
+            }
+            
+            const requiredMissions = gameState.boardSize * gameState.boardSize;
+            console.log(`필요 미션 수: ${requiredMissions}, 현재 미션 수: ${gameState.missions.length}`);
+            
+            // 미션이 부족한 경우 자동으로 생성
+            let missionsToUse = [];
+            if (gameState.missions.length < requiredMissions) {
+                if (gameState.missions.length === 0) {
+                    showMessage('미션이 하나도 없습니다! 먼저 미션을 추가해주세요.', 'error');
+                    return;
+                }
+                
+                console.log('미션 자동 생성 시작');
+                // 미션 자동 생성
+                missionsToUse = this.generateSufficientMissions(requiredMissions);
+                console.log('생성된 미션들:', missionsToUse);
+                showMessage(`미션이 ${requiredMissions}개 필요하지만 ${gameState.missions.length}개만 있어서, 자동으로 미션을 반복 생성했습니다!`, 'info');
+            } else {
+                missionsToUse = [...gameState.missions];
+            }
 
-        if (!gameState.isHost) {
-            showMessage('방장만 게임을 시작할 수 있습니다!', 'error');
-            return;
-        }
-        
-        console.log(`현재 플레이어 수: ${Object.keys(gameState.players).length}`);
-        if (Object.keys(gameState.players).length < 2) {
-            showMessage('게임을 시작하려면 최소 2명 이상의 플레이어가 필요합니다!', 'error');
-            return;
-        }
-        
-        console.log('미션 맵 생성 시작');
-        const shuffledMissions = [...missionsToUse].sort(() => Math.random() - 0.5).slice(0, requiredMissions);
-        const shuffledNumbersForMap = Array.from({length: requiredMissions}, (_, i) => i + 1).sort(() => Math.random() - 0.5);
+            console.log('미션 맵 생성 시작');
+            const shuffledMissions = [...missionsToUse].sort(() => Math.random() - 0.5).slice(0, requiredMissions);
+            const shuffledNumbersForMap = Array.from({length: requiredMissions}, (_, i) => i + 1).sort(() => Math.random() - 0.5);
 
-        const missionMap = {};
-        for (let i = 0; i < requiredMissions; i++) {
-            missionMap[shuffledNumbersForMap[i]] = shuffledMissions[i];
-        }
-        console.log('생성된 missionMap:', missionMap);
-        
-        try {
+            const missionMap = {};
+            for (let i = 0; i < requiredMissions; i++) {
+                missionMap[shuffledNumbersForMap[i]] = shuffledMissions[i];
+            }
+            console.log('생성된 missionMap:', missionMap);
+            
             // gameState에서 직접 값을 사용 (DOM에서 읽지 않음)
             const winCondition = gameState.winCondition;
             const selectedBoardSize = gameState.boardSize;
@@ -111,10 +132,12 @@ class BingoManager {
         } catch (error) {
             showMessage('게임 시작에 실패했습니다: ' + error.message, 'error');
             console.error('게임 시작 오류:', error);
+        } finally {
+            // 중복 실행 방지 플래그 해제
+            this.gameStarting = false;
+            console.log('startGame 함수 종료');
         }
-        console.log('startGame 함수 종료');
     }
-
     
     generateBingoBoard() {
         const size = gameState.boardSize;
