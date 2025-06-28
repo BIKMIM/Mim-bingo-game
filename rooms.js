@@ -94,36 +94,40 @@ class RoomManager {
         }
 
         try {
-            gameState.isHost = true;
-            gameState.playerName = playerNameInput;
-            gameState.roomCode = generateRoomCode();
-            gameState.maxPlayers = parseInt(document.getElementById('max-players-create').value);
-            
-            gameState.roomRef = database.ref('rooms/' + gameState.roomCode);
-            
-            await gameState.roomRef.set({
-                host: gameState.playerUID,
-                players: {
-                    [gameState.playerUID]: {
-                        name: gameState.playerName,
-                        isHost: true,
-                        joinedAt: Date.now(),
-                        boardState: {}
-                    }
-                },
-                missions: gameState.missions,
-                gameStarted: false,
-                winCondition: 1,
-                boardSize: gameState.boardSize,
-                maxPlayers: gameState.maxPlayers,
-                createdAt: Date.now(),
-                flippedNumbers: {},
-                winner: null,
-                gameEnded: false,
-                missionMap: {},
-                bingoClaimed: null,
-                playerOrderUids: [gameState.playerUID]
-            });
+    gameState.isHost = true;
+    gameState.playerName = playerNameInput;
+    gameState.roomCode = generateRoomCode();
+    gameState.maxPlayers = parseInt(document.getElementById('max-players-create').value);
+    
+    // 선택된 보드 크기 반영
+    const selectedBoardSize = parseInt(document.querySelector('input[name="board-size"]:checked').value);
+    gameState.boardSize = selectedBoardSize;
+    
+    gameState.roomRef = database.ref('rooms/' + gameState.roomCode);
+    
+    await gameState.roomRef.set({
+        host: gameState.playerUID,
+        players: {
+            [gameState.playerUID]: {
+                name: gameState.playerName,
+                isHost: true,
+                joinedAt: Date.now(),
+                boardState: {}
+            }
+        },
+        missions: gameState.missions,
+        gameStarted: false,
+        winCondition: 1,
+        boardSize: gameState.boardSize,  // 선택된 보드 크기 저장
+        maxPlayers: gameState.maxPlayers,
+        createdAt: Date.now(),
+        flippedNumbers: {},
+        winner: null,
+        gameEnded: false,
+        missionMap: {},
+        bingoClaimed: null,
+        playerOrderUids: [gameState.playerUID]
+    });
 
             this.setupRoomListeners();
             
