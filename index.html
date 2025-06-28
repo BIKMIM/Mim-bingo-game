@@ -12,7 +12,7 @@
             <h1>🎯 밈주머니 빙고 게임!</h1>
             <p>밈주머니와 함께 즐기는 쐐기 빙고!</p>
             <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
-                v4.971 - 턴 삭제
+                v4.94 - 미션 기능 개선
             </div>
         </div>
 
@@ -125,7 +125,14 @@
                         </div>
                     </div>
                 </div>
+                
+                <div id="first-player-section" class="hidden" style="margin-top: 20px;">
+                    <label><strong>선공 플레이어:</strong></label>
+                    <select id="first-player-select" style="margin-left: 10px; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0;">
+                        <option value="">선공을 선택하세요</option>
+                    </select>
                 </div>
+            </div>
 
             <div style="text-align: center;">
                 <button class="btn btn-primary" id="start-game-btn" onclick="startGame()" style="font-size: 18px; padding: 15px 30px;">
@@ -137,8 +144,8 @@
         <div id="game-area" class="game-area">
             <div class="game-status">
                 <div class="status-text">방 코드: <span class="room-code-display" id="current-room-code">ABC123</span></div>
-                <div class="status-text">선택 된 숫자: <strong id="flipped-numbers-count">0</strong></div>
-            </div>
+                <div class="status-text">현재 차례: <strong id="current-turn">당신</strong></div>
+                <div class="status-text">선택 된 숫자: <strong id="flipped-numbers-count">0</strong></div> </div>
 
             <div class="bingo-board" id="bingo-board">
                 </div>
@@ -147,7 +154,10 @@
                 <button id="bingo-button" class="btn btn-primary" onclick="claimBingo()" disabled>
                     🎉 빙고!
                 </button>
-                </div>
+                <button id="turn-end-button" class="btn btn-secondary" onclick="turnEnd()" disabled>
+                    ➡️ 턴 종료
+                </button>
+            </div>
 
             <div style="text-align: center; margin-top: 20px;">
                 <button class="btn btn-secondary" onclick="backToSetup()">게임 설정으로 돌아가기</button>
