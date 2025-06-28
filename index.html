@@ -593,7 +593,7 @@
             <h1>🎯 밈주머니 빙고 게임!</h1>
             <p>밈주머니와 함께 즐기는 쐐기 빙고!</p>
             <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
-                v4.98 - 턴 삭제
+                v4.981 - 턴 삭제
             </div>
         </div>
 
@@ -1835,11 +1835,15 @@
                     let stateForMeInFirebase = currentMyStateData ? currentMyStateData.state : 'unflipped';
                     let nextStateForMe;
 
+                   // 이 부분을 수정합니다.
                     if (stateForMeInFirebase === 'flipped') {
+                        // 이미 flipped 상태면, 다시 클릭하면 failed로
                         nextStateForMe = 'failed';
                     } else if (stateForMeInFirebase === 'failed') {
+                        // 이미 failed 상태면, 다시 클릭하면 flipped로
                         nextStateForMe = 'flipped';
-                    } else { // 'unflipped' 이거나 초기 상태인 경우
+                    } else { 
+                        // 첫 클릭이거나 unflipped 상태면 무조건 flipped로
                         nextStateForMe = 'flipped';
                     }
                     
