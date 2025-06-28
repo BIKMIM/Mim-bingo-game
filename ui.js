@@ -5,25 +5,19 @@ class UIManager {
     }
 
     setupEventListeners() {
-    const backToSetupBtn = document.getElementById('back-to-setup-btn');
-    
-    if (backToSetupBtn) backToSetupBtn.addEventListener('click', () => this.backToSetup());
-    
-    // 보드 크기 변경 이벤트 - 개선된 버전
-    document.querySelectorAll('input[name="board-size"]').forEach(radio => {
-        radio.addEventListener('change', () => {
-            const newSize = parseInt(radio.value);
-            gameState.boardSize = newSize;
-            
-            // 미션 매니저의 디스플레이 업데이트
-            missionManager.updateMissionsDisplay();
-            
-            // 필요한 미션 개수 메시지 업데이트
-            const requiredMissions = newSize * newSize;
-            showMessage(`${newSize}x${newSize} 보드에는 최소 ${requiredMissions}개의 미션이 필요합니다.`, 'info');
+        const backToSetupBtn = document.getElementById('back-to-setup-btn');
+        
+        if (backToSetupBtn) backToSetupBtn.addEventListener('click', () => this.backToSetup());
+        
+        // 보드 크기 변경 이벤트
+        document.querySelectorAll('input[name="board-size"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                const newSize = parseInt(radio.value);
+                gameState.boardSize = newSize;
+                missionManager.updateMissionsDisplay();
+            });
         });
-    });
-}
+    }
 
     // 상태 메시지 표시
     showMessage(message, type = 'info') {
