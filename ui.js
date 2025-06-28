@@ -109,9 +109,8 @@ class UIManager {
             startBtn.textContent = '🎮 게임 시작!';
             startBtn.disabled = false;
         } else {
-            startBtn.style.display = 'block';
-            startBtn.textContent = '방장이 게임을 시작하기를 기다리는 중...';
-            startBtn.disabled = true;
+            // 게스트는 게임 시작 버튼을 아예 숨김
+            startBtn.style.display = 'none';
         }
 
         // 호스트 전용 UI 요소들 업데이트
