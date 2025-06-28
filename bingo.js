@@ -23,21 +23,16 @@ class BingoManager {
         }
     }
 
-    // 미션이 부족할 때 자동으로 충분한 미션을 생성하는 함수
+    // 미션이 부족할 때 자동으로 충분한 미션을 생성하는 함수 (회차 표시 제거)
     generateSufficientMissions(requiredCount) {
         const availableMissions = [...gameState.missions];
         const resultMissions = [];
         
-        // 현재 미션들을 먼저 추가
-        resultMissions.push(...availableMissions);
-        
-        // 부족한 만큼 반복해서 추가 (번호를 붙여서 구분)
-        let round = 2;
+        // 필요한 만큼 반복해서 추가 (회차 표시 없이)
         while (resultMissions.length < requiredCount) {
             for (let i = 0; i < availableMissions.length && resultMissions.length < requiredCount; i++) {
-                resultMissions.push(`${availableMissions[i]} (${round}회차)`);
+                resultMissions.push(availableMissions[i]);
             }
-            round++;
         }
         
         return resultMissions.slice(0, requiredCount);
@@ -82,7 +77,7 @@ class BingoManager {
                 }
                 
                 console.log('미션 자동 생성 시작');
-                // 미션 자동 생성
+                // 미션 자동 생성 (회차 표시 없이)
                 missionsToUse = this.generateSufficientMissions(requiredMissions);
                 console.log('생성된 미션들:', missionsToUse);
                 showMessage(`미션이 ${requiredMissions}개 필요하지만 ${gameState.missions.length}개만 있어서, 자동으로 미션을 반복 생성했습니다!`, 'info');
