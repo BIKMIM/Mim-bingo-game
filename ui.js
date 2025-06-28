@@ -61,6 +61,28 @@ class UIManager {
         }
     }
 
+    // 호스트 전용 UI 요소들을 보이거나 숨기기
+    updateHostOnlyElements() {
+        // 미션 저장/불러오기 버튼들
+        const saveMissionsBtn = document.getElementById('save-missions-btn');
+        const loadMissionsBtn = document.getElementById('load-missions-btn');
+        
+        // 게임 옵션 섹션 (빙고판 크기, 승리 조건)
+        const gameOptionsSection = document.getElementById('game-options-section');
+        
+        if (gameState.isHost) {
+            // 방장이면 모든 요소 보이기
+            if (saveMissionsBtn) saveMissionsBtn.style.display = 'inline-block';
+            if (loadMissionsBtn) loadMissionsBtn.style.display = 'inline-block';
+            if (gameOptionsSection) gameOptionsSection.style.display = 'block';
+        } else {
+            // 방장이 아니면 숨기기
+            if (saveMissionsBtn) saveMissionsBtn.style.display = 'none';
+            if (loadMissionsBtn) loadMissionsBtn.style.display = 'none';
+            if (gameOptionsSection) gameOptionsSection.style.display = 'none';
+        }
+    }
+
     // 플레이어 목록 업데이트
     updatePlayersDisplay() {
         const playersList = document.getElementById('players-list');
@@ -91,6 +113,9 @@ class UIManager {
             startBtn.textContent = '방장이 게임을 시작하기를 기다리는 중...';
             startBtn.disabled = true;
         }
+
+        // 호스트 전용 UI 요소들 업데이트
+        this.updateHostOnlyElements();
     }
 
     // 게임 영역 표시
