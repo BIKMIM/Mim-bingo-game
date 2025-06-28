@@ -48,23 +48,26 @@ class BingoManager {
         console.log('생성된 missionMap:', missionMap);
         
         try {
-            const winCondition = document.querySelector('input[name="win-condition"]:checked').value;
-            const selectedBoardSize = 3;
-            const selectedMaxPlayers = gameState.maxPlayers;
-            
-            console.log('Firebase room 업데이트 시도');
-            await gameState.roomRef.update({
-                gameStarted: true,
-                winCondition: parseInt(winCondition),
-                boardSize: selectedBoardSize,
-                maxPlayers: selectedMaxPlayers,
-                startedAt: firebase.database.ServerValue.TIMESTAMP,
-                flippedNumbers: {},
-                winner: null,
-                gameEnded: false,
-                missionMap: missionMap,
-                bingoClaimed: null
-            });
+    const winCondition = document.querySelector('input[name="win-condition"]:checked').value;
+    const selectedBoardSize = parseInt(document.querySelector('input[name="board-size"]:checked').value);
+    const selectedMaxPlayers = gameState.maxPlayers;
+    
+    // gameState도 업데이트
+    gameState.boardSize = selectedBoardSize;
+    
+    console.log('Firebase room 업데이트 시도');
+    await gameState.roomRef.update({
+        gameStarted: true,
+        winCondition: parseInt(winCondition),
+        boardSize: selectedBoardSize,  // 선택된 보드 크기 사용
+        maxPlayers: selectedMaxPlayers,
+        startedAt: firebase.database.ServerValue.TIMESTAMP,
+        flippedNumbers: {},
+        winner: null,
+        gameEnded: false,
+        missionMap: missionMap,
+        bingoClaimed: null
+    });
             console.log('Firebase room 업데이트 성공');
 
             const updates = {};
