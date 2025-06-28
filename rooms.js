@@ -233,71 +233,78 @@ class RoomManager {
     }
 
     setupRoomListeners() {
-        if (!gameState.roomRef) return;
+    if (!gameState.roomRef) return;
 
-        gameState.roomRef.on('value', (snapshot) => {
-            const roomData = snapshot.val();
-            if (roomData) {
-                gameState.boardSize = roomData.boardSize || 3;
-                gameState.maxPlayers = roomData.maxPlayers || 2;
-                gameState.gameStarted = roomData.gameStarted || false;
-                gameState.winCondition = roomData.winCondition || 1;
-                gameState.missionMap = roomData.missionMap || {};
-                gameState.flippedNumbers = Object.keys(roomData.flippedNumbers || {}).map(Number);
-                
-                if (roomData.players) {
-                    gameState.players = roomData.players;
-                    gameState.playerList = roomData.playerOrderUids || [];
-                } else {
-                    gameState.players = {};
-                    gameState.playerList = [];
-                }
-                
-                uiManager.updatePlayersDisplay();
-                
-                gameState.missions = roomData.missions || [];
-                missionManager.updateMissionsDisplay();
-
-                if (gameState.gameStarted) {
-                    uiManager.showGameArea();
-                    document.getElementById('current-room-code').textContent = gameState.roomCode;
-                    document.getElementById('flipped-numbers-count').textContent = gameState.flippedNumbers.length;
-                    
-                    const totalCells = gameState.boardSize * gameState.boardSize;
-                    if (gameState.bingoBoard.length !== totalCells || document.getElementById('bingo-board').children.length !== totalCells) {
-                        if (Object.keys(gameState.missionMap).length === totalCells) {
-                            bingoManager.generateBingoBoard();
-                        }
-                    }
-                } else {
-                    uiManager.showSetupArea();
-                }
-
-                if (gameState.players[gameState.playerUID] && gameState.players[gameState.playerUID].boardState) {
-                    bingoManager.syncBingoBoard(gameState.players[gameState.playerUID].boardState);
-                } else {
-                    bingoManager.syncBingoBoard({});
-                }
-                
-                bingoManager.checkBingoPossibility();
-                bingoManager.updateBingoCellClickability();
-
-                if (roomData.winner) {
-                    uiManager.displayWinnerMessage(roomData.winner, roomData.winCondition);
-                    document.getElementById('bingo-button').disabled = true;
-                    document.getElementById('bingo-button').style.display = 'none';
-                } else {
-                    const winnerOverlay = document.getElementById('winner-overlay');
-                    if (winnerOverlay) winnerOverlay.remove();
-                    if (gameState.gameStarted) {
-                        document.getElementById('bingo-button').style.display = 'block';
-                    }
-                }
-                
-                document.getElementById('add-mission-btn').disabled = !gameState.roomCode;
+    gameState.roomRef.on('value', (snapshot) => {
+        const roomData = snapshot.val();
+        if (roomData) {
+            gameState.boardSize = roomData.boardSize || 3;
+            gameState.maxPlayers = roomData.maxPlayers || 2;
+            gameState.gameStarted = roomData.gameStarted || false;
+            gameState.winCondition = roomData.winCondition || 1;
+            gameState.missionMap = roomData.missionMap || {};
+            gameState.flippedNumbers = Object.keys(roomData.flippedNumbers || {}).map(Number);
+            
+            if (roomData.players) {
+                gameState.players = roomData.players;
+                gameState.playerList = roomData.playerOrderUids || [];
+            } else {
+                gameState.players = {};
+                gameState.playerList = [];
             }
-        });
-    }
+            
+            uiManager.updatePlayersDisplay();
+            
+            gameState.missions = roomData.missions || [];
+            missionManager.updateMissionsDisplay();
+
+            if (gameState.gameStarted) {
+                uiManager.showGameArea();
+                document.getElementById('current-room-code').textContent = gameState.roomCode;
+                document.getElementById('flipped-numbers-count').textContent = gameState.flippedNumbers.length;
+                
+                const totalCells = gameState.boardSize * gameState.boardSize;
+                if (gameState.bingoBoard.length !== totalCells || document.getElementById('bingo-board').children.length !== totalCells) {
+                    if (Object.keys(gameState.missionMap).length === totalCells) {
+                        bingoManager.generateBingoBoard();
+                    }
+                }
+            } else {
+                uiManager.showSetupArea();
+                // 게스트인 경우 방장의 설정을 UI에 반영
+                if (!gameState.isHost) {
+                    // 약간의 지연을 두고 UI 업데이트 (DOM이 준비된 후)
+                    setTimeout(() => {
+                        uiManager.updateGameOptionsDisplay();
+                    }, 100);
+                }
+            }
+
+            if (gameState.players[gameState.playerUID] && gameState.players[gameState.playerUID].boardState) {
+                bingoManager.syncBingoBoard(gameState.players[gameState.playerUID].boardState);
+            } else {
+                bingoManager.syncBingoBoard({});
+            }
+            
+            bingoManager.checkBingoPossibility();
+            bingoManager.updateBingoCellClickability();
+
+            if (roomData.winner) {
+                uiManager.displayWinnerMessage(roomData.winner, roomData.winCondition);
+                document.getElementById('bingo-button').disabled = true;
+                document.getElementById('bingo-button').style.display = 'none';
+            } else {
+                const winnerOverlay = document.getElementById('winner-overlay');
+                if (winnerOverlay) winnerOverlay.remove();
+                if (gameState.gameStarted) {
+                    document.getElementById('bingo-button').style.display = 'block';
+                }
+            }
+            
+            document.getElementById('add-mission-btn').disabled = !gameState.roomCode;
+        }
+    });
+}
 
     copyShareLink() {
         const shareLinkInput = document.getElementById('share-link');
