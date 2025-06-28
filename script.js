@@ -668,31 +668,74 @@ function syncBingoBoard(myBoardStateData) {
 
 // 빙고 셀 클릭 가능 여부 업데이트
 function updateBingoCellClickability() {
-  document.querySelectorAll('.bingo-cell').forEach(cell => {
-    cell.style.pointerEvents = 'auto';
-    cell.style.opacity = '1';
-  });
+    const cells = document.querySelectorAll('.bingo-cell');
+    const currentPlayerUid = gameState.playerList[gameState.currentTurn];
+    const isMyTurn = currentPlayerUid === gameState.playerUID;
+    
+    const gameEnded = gameState.gameStarted && (gameState.roomRef && gameState.roomRef.gameEnded || gameState.roomRef && gameState.roomRef.winner);
+
+    cells.forEach((cellElement, index) => {
+        const cellNumber = gameState.bingoBoard[index].number;
+        const isFlippedCommon = gameState.flippedNumbers.includes(cellNumber);
+
+        if (gameEnded) {
+            cellElement.style.pointerEvents = 'none';
+            cellElement.style.opacity = '0.7';
+        } else if (isMyTurn) {
+            if (!isFlippedCommon && !gameState.hasMadeMoveInTurn) {
+                cellElement.style.pointerEvents = 'auto';
+                cellElement.style.opacity = '1';
+            } else if (isFlippedCommon) {
+                cellElement.style.pointerEvents = 'auto';
+                cellElement.style.opacity = '1';
+            } else {
+                cellElement.style.pointerEvents = 'none';
+                cellElement.style.opacity = '0.5';
+            }
+        } else {
+            if (isFlippedCommon) {
+                cellElement.style.pointerEvents = 'auto';
+                cellElement.style.opacity = '1';
+            } else {
+                cellElement.style.pointerEvents = 'none';
+                cellElement.style.opacity = '0.5';
+            }
+        }
+    });
 }
 
 // 빙고 가능 여부 확인
 function checkBingoPossibility() {
-  const board = gameState.bingoBoard;
-  const size = gameState.boardSize;
-  const requiredLines = gameState.winCondition;
-  let completedLines = 0;
-  const bingoButton = document.getElementById('bingo-button');
+    const board = gameState.bingoBoard;
+    const size = gameState.boardSize;
+    const requiredLines = gameState.winCondition;
+    let completedLines = 0;
+    const bingoButton = document.getElementById('bingo-button');
+    const turnEndButton = document.getElementById('turn-end-button');
+    const currentPlayerUid = gameState.playerList[gameState.currentTurn];
+    const isMyTurn = currentPlayerUid === gameState.playerUID;
 
-  if (!gameState.gameStarted || !gameState.roomRef) {
-    bingoButton.disabled = true;
-    return;
-  }
-
-  gameState.roomRef.once('value').then(snapshot => {
-    const roomData = snapshot.val();
-    if (roomData.gameEnded || roomData.winner) {
-      bingoButton.disabled = true;
-      return;
+    if (!gameState.gameStarted || !gameState.roomRef) {
+        gameState.canClaimBingo = false;
+        bingoButton.disabled = true;
+        turnEndButton.disabled = true;
+        return;
     }
+
+    gameState.roomRef.once('value').then(snapshot => {
+        const roomData = snapshot.val();
+        if (!roomData) return;
+
+        if (roomData.gameEnded || roomData.winner) {
+            bingoButton.disabled = true;
+            turnEndButton.disabled = true;
+            bingoButton.style.display = 'none';
+            turnEndButton.style.display = 'none';
+            return;
+        } else {
+            bingoButton.style.display = 'block';
+            turnEndButton.style.display = 'block';
+        }
 
         // 빙고 라인 체크
         for (let i = 0; i < size; i++) {
@@ -759,6 +802,41 @@ function checkBingoPossibility() {
         bingoButton.disabled = true;
         turnEndButton.disabled = true;
     });
+}
+// 턴 종료
+async function turnEnd() {
+    const currentPlayerUid = gameState.playerList[gameState.currentTurn];
+    if (currentPlayerUid !== gameState.playerUID) {
+        showMessage('당신의 차례가 아닙니다!', 'error');
+        return;
+    }
+
+    const roomSnapshot = await gameState.roomRef.once('value');
+    const roomData = roomSnapshot.val();
+
+    if (roomData.gameEnded || roomData.winner) {
+        showMessage('게임은 이미 종료되었습니다!', 'error');
+        return;
+    }
+
+    if (!gameState.hasMadeMoveInTurn) {
+        showMessage('셀을 하나라도 뒤집어야 턴을 종료할 수 있습니다!', 'error');
+        return;
+    }
+
+    try {
+        const nextTurn = (gameState.currentTurn + 1) % gameState.playerList.length;
+        await gameState.roomRef.update({
+            currentTurn: nextTurn
+        });
+        showMessage('턴을 종료했습니다.', 'info');
+        gameState.hasMadeMoveInTurn = false;
+        document.getElementById('turn-end-button').disabled = true;
+        document.getElementById('bingo-button').disabled = true;
+    } catch (error) {
+        showMessage('턴 종료에 실패했습니다: ' + error.message, 'error');
+        console.error('Turn End Error:', error);
+    }
 }
 
 // 빙고 승리 주장
@@ -1029,42 +1107,89 @@ function generateBingoBoard() {
 
 // 셀 뒤집기
 async function flipCell(index) {
-  const roomSnapshot = await gameState.roomRef.once('value');
-  const roomData = roomSnapshot.val();
-  if (roomData.gameEnded || roomData.winner) {
-    showMessage('게임이 이미 종료되었습니다!', 'error');
-    return;
-  }
-
-  const selectedNumber = gameState.bingoBoard[index].number;
-  const isFlippedCommon = gameState.flippedNumbers.includes(selectedNumber);
-
-  if (!isFlippedCommon) {
-    // 누구나 언제든 뒤집기 가능
-    const flippedResult = await gameState.roomRef
-      .child('flippedNumbers')
-      .child(selectedNumber)
-      .transaction(current => current === null ? true : undefined);
-
-    if (!flippedResult.committed) {
-      showMessage('이미 뒤집혔거나 오류가 발생했습니다.', 'error');
-      return;
+    const roomSnapshot = await gameState.roomRef.once('value');
+    const roomData = roomSnapshot.val();
+    
+    if (roomData.gameEnded || roomData.winner) {
+        showMessage('게임이 이미 종료되었거나 승자가 결정되었습니다!', 'error');
+        return;
     }
-  }
+    
+    const selectedNumber = gameState.bingoBoard[index].number;
+    const missionToAssign = gameState.bingoBoard[index].mission;
+    const currentPlayerUidInRoom = gameState.playerList[gameState.currentTurn];
+    const isMyTurn = gameState.playerUID === currentPlayerUidInRoom;
 
-  // 자신의 boardState 토글
-  const myCellRef = gameState.roomRef
-    .child(`players/${gameState.playerUID}/boardState/${selectedNumber}`);
-  await myCellRef.transaction(current => {
-    const prev = current?.state || 'unflipped';
-    return { 
-      state: prev === 'flipped' ? 'failed' : 'flipped',
-      mission: gameState.bingoBoard[index].mission,
-      changedAt: firebase.database.ServerValue.TIMESTAMP
-    };
-  });
+    try {
+        const isFlippedCommon = gameState.flippedNumbers.includes(selectedNumber);
+        const myCurrentState = roomData.players[gameState.playerUID]?.boardState?.[selectedNumber]?.state || 'unflipped';
+
+        if (!isFlippedCommon) {
+            if (isMyTurn) {
+                if (gameState.hasMadeMoveInTurn) {
+                    showMessage('한 턴에 하나의 숫자만 뒤집을 수 있습니다!', 'error');
+                    return;
+                }
+
+                const flippedResult = await gameState.roomRef.child('flippedNumbers').child(selectedNumber).transaction((currentValue) => {
+                    if (currentValue === null) {
+                        return true;
+                    }
+                    return undefined;
+                });
+
+                if (!flippedResult.committed) {
+                    showMessage('이미 다른 플레이어가 이 숫자를 뒤집었거나 문제가 발생했습니다.', 'error');
+                    return;
+                }
+                gameState.hasMadeMoveInTurn = true;
+            } else {
+                const currentPlayerNameForMsg = gameState.players[currentPlayerUidInRoom]?.name || '알 수 없는 플레이어';
+                showMessage(`${currentPlayerNameForMsg}의 차례입니다. 새로운 숫자를 선택할 수 없습니다!`, 'error');
+                return;
+            }
+        }
+
+        const myBoardStateRef = gameState.roomRef.child(`players/${gameState.playerUID}/boardState/${selectedNumber}`);
+        
+        const boardStateResult = await myBoardStateRef.transaction((currentMyStateData) => {
+            let stateForMeInFirebase = currentMyStateData ? currentMyStateData.state : 'unflipped';
+            let nextStateForMe;
+
+            if (isFlippedCommon) {
+                if (stateForMeInFirebase === 'flipped') {
+                    nextStateForMe = 'failed';
+                } else if (stateForMeInFirebase === 'failed') {
+                    nextStateForMe = 'flipped';
+                } else {
+                    nextStateForMe = 'flipped';
+                }
+            } else {
+                if (stateForMeInFirebase === 'unflipped') {
+                    nextStateForMe = 'flipped';
+                } else if (stateForMeInFirebase === 'failed') {
+                    nextStateForMe = 'unflipped';
+                } else {
+                    return undefined;
+                }
+            }
+            
+            return {
+                state: nextStateForMe,
+                mission: missionToAssign,
+                changedAt: firebase.database.ServerValue.TIMESTAMP
+            };
+        });
+
+        if (!boardStateResult.committed) {
+            showMessage('내 빙고판 칸 상태 변경 중 오류가 발생했습니다. 다시 시도해주세요!', 'error');
+        }
+        
+    } catch (error) {
+        showMessage('셀 업데이트에 실패했습니다: ' + error.message, 'error');
+        console.error('Firebase Transaction Error:', error);
+    }
 }
-
 
 // 공유 링크 복사
 function copyShareLink() {
