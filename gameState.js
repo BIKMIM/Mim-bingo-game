@@ -45,4 +45,12 @@ function resetGameState() {
         winCondition: 1,
         boardSize: 3,
         maxPlayers: 2,
-        gameStarte
+        gameStarted: false,
+        bingoBoard: [],
+        playerList: [],
+        roomRef: null,
+        missionMap: {},
+        canClaimBingo: false,
+        flippedNumbers: []
+    });
+}
