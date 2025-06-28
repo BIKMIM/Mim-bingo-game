@@ -228,10 +228,12 @@ setupEventListeners() {
         document.getElementById('game-area').style.display = 'none';
     }
 
-    // 승리 메시지 표시
+    // 승리 메시지 표시 (중복 방지 및 올바른 위치)
     displayWinnerMessage(winnerName, winCondition) {
-        if (document.getElementById('winner-overlay')) {
-            return;
+        // 기존 승리 메시지가 있다면 제거 (중복 방지)
+        const existingOverlay = document.getElementById('winner-overlay');
+        if (existingOverlay) {
+            existingOverlay.remove();
         }
 
         const overlay = document.createElement('div');
@@ -246,8 +248,9 @@ setupEventListeners() {
             <p class="winner-text gradient-text">${winCondition}줄 빙고로 승리했습니다!</p>
             <button class="btn btn-primary" onclick="uiManager.closeWinnerMessage()">확인</button>
         `;
+        
         overlay.appendChild(messageBox);
-        document.body.appendChild(messageBox);
+        document.body.appendChild(overlay);
     }
 
     // 승리 메시지 닫기
