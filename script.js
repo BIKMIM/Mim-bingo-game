@@ -350,7 +350,7 @@ function setupRoomListeners() {
                 document.getElementById('game-area').style.display = 'none';
             }
 
-            updateTurnDisplay();
+            // updateTurnDisplay();
             if (gameState.players[gameState.playerUID] && gameState.players[gameState.playerUID].boardState) {
                 syncBingoBoard(gameState.players[gameState.playerUID].boardState);
             } else {
@@ -551,7 +551,7 @@ async function startGame() {
             boardSize: selectedBoardSize,
             maxPlayers: selectedMaxPlayers,
             startedAt: firebase.database.ServerValue.TIMESTAMP,
-            currentTurn: firstPlayerIndex,
+            // currentTurn: firstPlayerIndex,
             flippedNumbers: {},
             winner: null,
             gameEnded: false,
@@ -593,20 +593,20 @@ function updateFirstPlayerOptions() {
 }
 
 // 턴 표시 업데이트
-function updateTurnDisplay() {
-    const turnElement = document.getElementById('current-turn');
-    if (turnElement && gameState.playerList.length > 0) {
-        const currentPlayerUid = gameState.playerList[gameState.currentTurn];
-        const currentPlayerName = gameState.players[currentPlayerUid]?.name || '알 수 없음';
-        const isMyTurn = currentPlayerUid === gameState.playerUID;
+// function updateTurnDisplay() {
+//    const turnElement = document.getElementById('current-turn');
+//    if (turnElement && gameState.playerList.length > 0) {
+//        const currentPlayerUid = gameState.playerList[gameState.currentTurn];
+//        const currentPlayerName = gameState.players[currentPlayerUid]?.name || '알 수 없음';
+//        const isMyTurn = currentPlayerUid === gameState.playerUID;
         
-        if (isMyTurn) {
-            turnElement.innerHTML = '<span style="color: #667eea; font-weight: bold;">당신의 차례입니다!</span>';
-        } else {
-            turnElement.textContent = `${currentPlayerName}의 차례`;
-        }
-    }
-}
+//        if (isMyTurn) {
+//            turnElement.innerHTML = '<span style="color: #667eea; font-weight: bold;">당신의 차례입니다!</span>';
+//        } else {
+//            turnElement.textContent = `${currentPlayerName}의 차례`;
+//        }
+//    }
+// }
 
 // 빙고판 UI 동기화
 function syncBingoBoard(myBoardStateData) {
