@@ -82,37 +82,37 @@ class BingoManager {
     }
 
     generateBingoBoard() {
-        const size = gameState.boardSize;
-        const totalCells = size * size;
+    const size = gameState.boardSize;
+    const totalCells = size * size;
 
-        if (Object.keys(gameState.missionMap).length === 0 || Object.keys(gameState.missionMap).length !== totalCells) {
-            console.warn('generateBingoBoard: Mission map is not fully loaded yet or size mismatch. Retrying in 100ms...');
-            setTimeout(() => this.generateBingoBoard(), 100);
-            return;
-        }
-        
-        const bingoBoardElement = document.getElementById('bingo-board');
-        if (gameState.bingoBoard.length === totalCells && bingoBoardElement.children.length === totalCells && bingoBoardElement.classList.contains(`size-${size}`)) {
-            bingoBoardElement.className = `bingo-board size-${size}`;
-            return;
-        }
-
-        const numbers = Array.from({length: totalCells}, (_, i) => i + 1);
-        const shuffledNumbers = numbers.sort(() => Math.random() - 0.5);
-        
-        gameState.bingoBoard = shuffledNumbers.map((num) => ({
-            number: num,
-            state: 'unflipped',
-            mission: gameState.missionMap[num] || `미션 ${num}`
-        }));
-        
-        bingoBoardElement.className = `bingo-board size-${size}`;
-        bingoBoardElement.innerHTML = gameState.bingoBoard.map((cell, index) =>
-            `<div class="bingo-cell" onclick="bingoManager.flipCell(${index})">${cell.number}</div>`
-        ).join('');
-
-        this.updateBingoCellClickability();
+    if (Object.keys(gameState.missionMap).length === 0 || Object.keys(gameState.missionMap).length !== totalCells) {
+        console.warn('generateBingoBoard: Mission map is not fully loaded yet or size mismatch. Retrying in 100ms...');
+        setTimeout(() => this.generateBingoBoard(), 100);
+        return;
     }
+    
+    const bingoBoardElement = document.getElementById('bingo-board');
+    if (gameState.bingoBoard.length === totalCells && bingoBoardElement.children.length === totalCells && bingoBoardElement.classList.contains(`size-${size}`)) {
+        return;
+    }
+
+    const numbers = Array.from({length: totalCells}, (_, i) => i + 1);
+    const shuffledNumbers = numbers.sort(() => Math.random() - 0.5);
+    
+    gameState.bingoBoard = shuffledNumbers.map((num) => ({
+        number: num,
+        state: 'unflipped',
+        mission: gameState.missionMap[num] || `미션 ${num}`
+    }));
+    
+    // 동적 클래스 적용
+    bingoBoardElement.className = `bingo-board size-${size}`;
+    bingoBoardElement.innerHTML = gameState.bingoBoard.map((cell, index) =>
+        `<div class="bingo-cell" onclick="bingoManager.flipCell(${index})">${cell.number}</div>`
+    ).join('');
+
+    this.updateBingoCellClickability();
+}
 
     syncBingoBoard(myBoardStateData) {
         const totalCells = gameState.boardSize * gameState.boardSize;
