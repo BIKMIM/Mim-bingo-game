@@ -625,7 +625,7 @@
                             <option value="12">12명</option>
                         </select>
                     </div>
-                    <button class="btn btn-primary" id="create-room-btn" onclick="createRoom()">새 방 만들기</button>
+                    <button class="btn btn-primary" id="create-room-btn">새 방 만들기</button>
                 </div>
 
                 <div class="button-group" id="main-action-buttons" style="margin-top: 15px;">
@@ -2085,6 +2085,20 @@ function checkBingoPossibility() {
             loadMissions();
             // 미션 추가 버튼 초기 상태 설정
             document.getElementById('add-mission-btn').disabled = !gameState.roomCode;
+
+            // '새 방 만들기' 버튼 이벤트 리스너 추가
+            const createRoomButton = document.getElementById('create-room-btn');
+            if (createRoomButton) { // 요소가 존재하는지 확인
+                createRoomButton.addEventListener('click', createRoom); 
+            }
+
+            // '방 입장' 버튼 이벤트 리스너 추가
+            const joinRoomButton = document.querySelector('button[onclick="joinRoom()"]');
+            if (joinRoomButton) {
+                // 기존 onclick 속성을 제거하거나, 이 리스너를 사용하여 대체
+                joinRoomButton.onclick = null; // 기존 inline onclick 제거
+                joinRoomButton.addEventListener('click', () => joinRoom());
+            }
         });
 
         // 페이지 이탈 시 정리
