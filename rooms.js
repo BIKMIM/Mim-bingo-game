@@ -76,69 +76,73 @@ class RoomManager {
     }
 
     async createRoom() {
-        const playerNameInput = document.getElementById('player-name').value.trim();
-        if (!playerNameInput) {
-            showMessage('플레이어 이름을 입력해주세요!', 'error');
-            return;
-        }
-
-        if (!gameState.isAuthReady || !gameState.playerUID) {
-            showMessage('아직 로그인 중입니다. 잠시 후 다시 시도해주세요.', 'error');
-            return;
-        }
-
-        const password = await this.createPasswordPrompt();
-        if (password !== HOST_PASSWORD) {
-            showMessage('비밀번호가 올바르지 않거나 취소되었습니다!', 'error');
-            return;
-        }
-
-        try {
-            gameState.isHost = true;
-            gameState.playerName = playerNameInput;
-            gameState.roomCode = generateRoomCode();
-            gameState.maxPlayers = parseInt(document.getElementById('max-players-create').value);
-            
-            gameState.roomRef = database.ref('rooms/' + gameState.roomCode);
-            
-            await gameState.roomRef.set({
-                host: gameState.playerUID,
-                players: {
-                    [gameState.playerUID]: {
-                        name: gameState.playerName,
-                        isHost: true,
-                        joinedAt: Date.now(),
-                        boardState: {}
-                    }
-                },
-                missions: gameState.missions,
-                gameStarted: false,
-                winCondition: 1,
-                boardSize: gameState.boardSize,
-                maxPlayers: gameState.maxPlayers,
-                createdAt: Date.now(),
-                flippedNumbers: {},
-                winner: null,
-                gameEnded: false,
-                missionMap: {},
-                bingoClaimed: null,
-                playerOrderUids: [gameState.playerUID]
-            });
-
-            this.setupRoomListeners();
-            
-            const shareLink = `${window.location.origin}${window.location.pathname}?room=${gameState.roomCode}`;
-            document.getElementById('share-link').value = shareLink;
-            document.getElementById('share-section').classList.remove('hidden');
-            
-            showMessage(`방이 생성되었습니다! 방 코드: ${gameState.roomCode}`, 'success');
-            
-        } catch (error) {
-            showMessage('방 생성에 실패했습니다: ' + error.message, 'error');
-            console.error('방 생성 오류:', error);
-        }
+    const playerNameInput = document.getElementById('player-name').value.trim();
+    if (!playerNameInput) {
+        showMessage('플레이어 이름을 입력해주세요!', 'error');
+        return;
     }
 
+    if (!gameState.isAuthReady || !gameState.playerUID) {
+        showMessage('아직 로그인 중입니다. 잠시 후 다시 시도해주세요.', 'error');
+        return;
+    }
+
+    const password = await this.createPasswordPrompt();
+    if (password !== HOST_PASSWORD) {
+        showMessage('비밀번호가 올바르지 않거나 취소되었습니다!', 'error');
+        return;
+    }
+
+    try {
+        gameState.isHost = true;
+        gameState.playerName = playerNameInput;
+        gameState.roomCode = generateRoomCode();
+        gameState.maxPlayers = parseInt(document.getElementById('max-players-create').value);
+        
+        // 선택된 보드 크기 반영 (DOM 요소가 있을 때만)
+        const boardSizeElement = document.querySelector('input[name="board-size"]:checked');
+        const selectedBoardSize = boardSizeElement ? parseInt(boardSizeElement.value) : gameState.boardSize;
+        gameState.boardSize = selectedBoardSize;
+        
+        gameState.roomRef = database.ref('rooms/' + gameState.roomCode);
+        
+        await gameState.roomRef.set({
+            host: gameState.playerUID,
+            players: {
+                [gameState.playerUID]: {
+                    name: gameState.playerName,
+                    isHost: true,
+                    joinedAt: Date.now(),
+                    boardState: {}
+                }
+            },
+            missions: gameState.missions,
+            gameStarted: false,
+            winCondition: 1,
+            boardSize: gameState.boardSize,
+            maxPlayers: gameState.maxPlayers,
+            createdAt: Date.now(),
+            flippedNumbers: {},
+            winner: null,
+            gameEnded: false,
+            missionMap: {},
+            bingoClaimed: null,
+            playerOrderUids: [gameState.playerUID]
+        });
+
+        this.setupRoomListeners();
+        
+        const shareLink = `${window.location.origin}${window.location.pathname}?room=${gameState.roomCode}`;
+        document.getElementById('share-link').value = shareLink;
+        document.getElementById('share-section').classList.remove('hidden');
+        
+        showMessage(`방이 생성되었습니다! 방 코드: ${gameState.roomCode}`, 'success');
+        
+    } catch (error) {
+        showMessage('방 생성에 실패했습니다: ' + error.message, 'error');
+        console.error('방 생성 오류:', error);
+    }
+}
     showJoinRoom() {
         document.getElementById('join-room-section').classList.remove('hidden');
         document.getElementById('create-room-btn').classList.add('hidden-by-url-param');
