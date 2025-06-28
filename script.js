@@ -862,7 +862,6 @@ function backToSetup() {
     document.getElementById('room-code').value = '';
     document.getElementById('bingo-button').style.display = 'block';
     document.getElementById('bingo-button').disabled = true;
-    // document.getElementById('turn-end-button').style.display = 'none'; // 턴 개념 제거로 HTML에서 삭제됨
     
     const winnerOverlay = document.getElementById('winner-overlay');
     if (winnerOverlay) {
@@ -1112,15 +1111,13 @@ async function performAutoJoin(roomCode) {
     const mainActionButtons = document.getElementById('main-action-buttons');
     const gameOptionsSection = document.getElementById('game-options-section');
 
-    // DOM 요소가 로드될 때까지 기다리는 대신, 초기화 시점에 이미 존재한다고 가정
-    // 만약 계속해서 "DOM 요소를 찾을 수 없음" 경고가 뜬다면,
-    // DOMContentLoaded 내에서 이 함수를 호출하거나,
-    // DOM 요소를 직접 찾기 전에 작은 setTimeout을 추가하는 것을 고려할 수 있습니다.
-    // 현재는 auth.onAuthStateChanged -> checkURLParams -> performAutoJoin 순서로 호출되므로
-    // DOMContentLoaded 이후에 호출될 가능성이 높습니다.
+    // DOMContentLoaded 내에서 호출되므로, DOM 요소가 항상 존재한다고 가정.
+    // 만약 여전히 '필요한 DOM 요소를 찾을 수 없음' 메시지가 뜨면,
+    // 이 `performAutoJoin` 함수 호출 자체를 `setTimeout(..., 0)`으로 한 번 더 감싸서
+    // 브라우저 렌더링 사이클에서 미세한 시간차를 두는 것을 고려해볼 수 있습니다.
     if (!joinSection || !roomCodeInput || !nameInput || !hintElement || !createRoomControls || !mainActionButtons || !gameOptionsSection) {
-        console.error('❌ 필요한 DOM 요소를 찾을 수 없음. 자동 입장이 불가능할 수 있습니다.');
-        // 에러를 유발할 수 있으므로 재시도 로직 제거. DOMContentLoaded에서 확실히 실행되도록 하는 것이 좋음.
+        console.error('❌ 필요한 DOM 요소를 찾을 수 없음. 자동 입장이 불가능합니다.');
+        // 에러를 유발할 수 있으므로 재시도 로직 제거.
         return; 
     }
     
