@@ -208,16 +208,30 @@ body {
     display: none;
 }
 
-/* 빙고판 */
+/* 빙고판 - 동적 크기 지원 */
 .bingo-board {
     display: grid;
     gap: 10px;
     max-width: 500px;
     margin: 0 auto 30px auto;
+}
+
+/* 3x3 보드 */
+.bingo-board.size-3 {
     grid-template-columns: repeat(3, 1fr);
 }
 
-/* 빙고 셀 */
+/* 4x4 보드 */
+.bingo-board.size-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+/* 5x5 보드 */
+.bingo-board.size-5 {
+    grid-template-columns: repeat(5, 1fr);
+}
+
+/* 빙고 셀 - 보드 크기에 따른 폰트 크기 조정 */
 .bingo-cell {
     aspect-ratio: 1;
     background: #e2e8f0;
@@ -233,13 +247,71 @@ body {
     padding: 8px;
     overflow: hidden;
     box-sizing: border-box;
-    font-size: clamp(24px, 8vw, 48px);
     font-weight: bold;
     word-wrap: break-word;
     word-break: break-word;
     hyphens: auto;
     overflow-y: auto;
     line-height: 1.2;
+}
+/* 3x3 보드용 폰트 크기 */
+.bingo-board.size-3 .bingo-cell {
+    font-size: clamp(24px, 8vw, 48px);
+}
+
+.bingo-board.size-3 .bingo-cell.flipped,
+.bingo-board.size-3 .bingo-cell.failed {
+    font-size: clamp(10px, 3.5vw, 18px);
+}
+
+/* 4x4 보드용 폰트 크기 */
+.bingo-board.size-4 .bingo-cell {
+    font-size: clamp(18px, 6vw, 36px);
+}
+
+.bingo-board.size-4 .bingo-cell.flipped,
+.bingo-board.size-4 .bingo-cell.failed {
+    font-size: clamp(8px, 2.8vw, 14px);
+}
+
+/* 5x5 보드용 폰트 크기 */
+.bingo-board.size-5 .bingo-cell {
+    font-size: clamp(14px, 4.5vw, 28px);
+}
+
+.bingo-board.size-5 .bingo-cell.flipped,
+.bingo-board.size-5 .bingo-cell.failed {
+    font-size: clamp(6px, 2.2vw, 12px);
+}
+
+/* 모바일 반응형 추가 조정 */
+@media (max-width: 768px) {
+    .bingo-board.size-3 .bingo-cell {
+        font-size: clamp(18px, 10vw, 36px);
+    }
+    
+    .bingo-board.size-4 .bingo-cell {
+        font-size: clamp(14px, 8vw, 28px);
+    }
+    
+    .bingo-board.size-5 .bingo-cell {
+        font-size: clamp(12px, 6vw, 24px);
+    }
+    
+    .bingo-board.size-3 .bingo-cell.flipped,
+    .bingo-board.size-3 .bingo-cell.failed {
+        font-size: clamp(8px, 4vw, 14px);
+    }
+    
+    .bingo-board.size-4 .bingo-cell.flipped,
+    .bingo-board.size-4 .bingo-cell.failed {
+        font-size: clamp(6px, 3vw, 11px);
+    }
+    
+    .bingo-board.size-5 .bingo-cell.flipped,
+    .bingo-board.size-5 .bingo-cell.failed {
+        font-size: clamp(5px, 2.5vw, 9px);
+    }
 }
 
 .bingo-cell:hover {
