@@ -17,13 +17,13 @@ let gameState = {
     maxPlayers: 2,
     gameStarted: false,
     bingoBoard: [],
-    currentTurn: 0,
+    // currentTurn: 0,
     playerList: [],
     roomRef: null,
     missionMap: {},
     canClaimBingo: false,
     flippedNumbers: [],
-    hasMadeMoveInTurn: false,
+    // hasMadeMoveInTurn: false,
     isAuthReady: false
 };
 
