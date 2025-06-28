@@ -219,18 +219,9 @@
         .bingo-board {
             display: grid;
             gap: 10px;
-            max-width: 500px; /* 최대 너비 고정 */
+            max-width: 500px;
             margin: 0 auto 30px auto;
-        }
-        /* 빙고판 크기에 따른 동적 컬럼 설정 */
-        .bingo-board.size-3 {
-            grid-template-columns: repeat(3, 1fr);
-        }
-        .bingo-board.size-4 {
-            grid-template-columns: repeat(4, 1fr);
-        }
-        .bingo-board.size-5 {
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(3, 1fr); /* 3x3으로 고정 */
         }
 
         /* 빙고 셀 */
@@ -242,8 +233,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            /* 셀 숫자 크기 - 반응형으로 최대한 크게 */
-            font-size: clamp(20px, 6vw, 30px); 
+            font-size: 20px;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s;
@@ -251,7 +241,11 @@
             word-break: break-all; /* 긴 텍스트 강제 줄바꿈 (유지) */
             text-align: center;
             padding: 5px;
+            
+            /* [핵심 수정 1] 화면 움찔거림(flicker) 방지 */
             overflow: hidden; 
+            
+            /* [핵심 수정 2] 패딩으로 인한 크기 변경 방지 */
             box-sizing: border-box; 
         }
 
@@ -263,9 +257,13 @@
         .bingo-cell.flipped,
         .bingo-cell.failed {
             color: white;
-            /* 미션 텍스트 크기 - 반응형으로 최대한 크게, 줄 간격 조정 */
-            font-size: clamp(10px, 3.5vw, 18px); 
-            line-height: 1.2; /* 줄 간격 조절 */
+            
+            /* [핵심 수정 3] 동적/반응형 폰트 크기 적용 */
+            /* 화면 너비에 따라 폰트 크기를 8px ~ 13px 사이에서 유연하게 조절합니다. */
+            font-size: clamp(8px, 3vw, 13px);
+            
+            /* [핵심 수정 4] 줄 간격을 조절하여 가독성 확보 */
+            line-height: 1.15; 
         }
 
         /* Flipped (체크됨) 상태 고유 스타일 */
@@ -344,17 +342,17 @@
             cursor: pointer;
             transition: background-color 0.3s ease, transform 0.1s ease;
             margin-top: 20px;
-            display: block; 
+            display: block; /* 항상 보이도록 설정 */
             width: 100%;
             max-width: 300px;
             box-sizing: border-box;
         }
-       
+        
         #bingo-button:hover:not(:disabled) {
             background-color: #45a049;
             transform: scale(1.05);
         }
-        
+
         #bingo-button:disabled {
             background-color: #ccc;
             cursor: not-allowed;
@@ -367,7 +365,7 @@
             flex-direction: column;
             align-items: center;
             gap: 10px;
-            box-sizing: border-box; 
+            box-sizing: border-box; /* 추가: 패딩 포함 너비 계산 */
         }
 
         /* 비밀번호 입력 팝업용 오버레이 */
@@ -381,7 +379,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 2000; 
+            z-index: 2000; /* 승리 오버레이보다 높게 설정 */
         }
 
         .password-prompt {
@@ -400,7 +398,7 @@
         }
 
         .password-prompt input {
-            width: calc(100% - 24px); 
+            width: calc(100% - 24px); /* 패딩 고려 */
             padding: 12px;
             margin-bottom: 15px;
             border: 1px solid #e2e8f0;
@@ -429,7 +427,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.7); 
+            background-color: rgba(0, 0, 0, 0.7); /* 반투명 검정 배경 */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -438,8 +436,8 @@
         }
 
         .winner-message {
-            background-color: white; 
-            color: #4a5568; 
+            background-color: white; /* 팝업 배경색 흰색 */
+            color: #4a5568; /* 기본 텍스트 색상 */
             font-size: 3em;
             font-weight: bold;
             text-align: center;
@@ -461,7 +459,7 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            color: transparent; 
+            color: transparent; /* Fallback for browsers not supporting text-fill-color */
         }
 
         .winner-message .emoji {
@@ -526,32 +524,32 @@
         .create-room-controls {
             display: flex;
             flex-wrap: wrap;
-            align-items: flex-end; 
+            align-items: flex-end; /* 버튼과 드롭다운이 바닥선에 정렬되도록 */
             gap: 10px;
             margin-top: 15px;
         }
 
         .create-room-controls .input-group {
-            margin-bottom: 0; 
+            margin-bottom: 0; /* 이 그룹 내부의 input-group은 마진 제거 */
         }
 
         /* max-players select box의 너비를 조정하여 버튼과 잘 어울리게 */
         .create-room-controls #max-players-create {
-            width: auto; 
-            min-width: 100px; 
-            flex-grow: 1; 
+            width: auto; /* 자동 너비 */
+            min-width: 100px; /* 최소 너비 설정 */
+            flex-grow: 1; /* 남은 공간을 채우도록 성장 */
         }
 
         /* '새 방 만들기' 버튼 크기 키우기 */
         .create-room-controls #create-room-btn {
-            padding: 15px 30px; 
-            font-size: 18px; 
-            flex-shrink: 0; 
+            padding: 15px 30px; /* 패딩을 늘려 크기 키움 */
+            font-size: 18px; /* 글자 크기 키움 */
+            flex-shrink: 0; /* 줄어들지 않도록 */
         }
 
         /* 방 입장하기 버튼 숨김을 위한 클래스 추가 (초대링크 시) */
         .hidden-by-url-param {
-            display: none !important; 
+            display: none !important; /* 우선순위 높임 */
         }
 
         /* 최대 플레이어 수 드롭다운의 label과 select가 가로로 나란히 오도록 */
@@ -564,11 +562,11 @@
 
         .input-group.inline-label label {
             margin-bottom: 0;
-            flex-shrink: 0; 
+            flex-shrink: 0; /* 라벨이 줄어들지 않도록 */
         }
         .input-group.inline-label select {
-            width: auto; 
-            flex-grow: 1; 
+            width: auto; /* select가 자동으로 너비 조정 */
+            flex-grow: 1; /* 남은 공간 채우기 */
         }
 
         /* 로딩 인디케이터 추가 */
@@ -587,7 +585,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
     </style>
 </head>
 <body>
@@ -596,7 +593,7 @@
             <h1>🎯 밈주머니 빙고 게임!</h1>
             <p>밈주머니와 함께 즐기는 쐐기 빙고!</p>
             <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
-                v4.97 - 빙고 크기 선택가능, 턴삭제
+                v4.98 - 턴 삭제
             </div>
         </div>
 
@@ -625,7 +622,7 @@
                             <option value="12">12명</option>
                         </select>
                     </div>
-                    <button class="btn btn-primary" id="create-room-btn">새 방 만들기</button>
+                    <button class="btn btn-primary" id="create-room-btn" onclick="createRoom()">새 방 만들기</button>
                 </div>
 
                 <div class="button-group" id="main-action-buttons" style="margin-top: 15px;">
@@ -688,13 +685,7 @@
                     <label><strong>빙고판 크기:</strong></label>
                     <div class="radio-group">
                         <div class="radio-item">
-                            <input type="radio" name="board-size" value="3" id="size-3" checked> <label for="size-3">3x3</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" name="board-size" value="4" id="size-4"> <label for="size-4">4x4</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" name="board-size" value="5" id="size-5"> <label for="size-5">5x5</label>
+                            <input type="radio" name="board-size" value="3" id="size-3" checked disabled> <label for="size-3">3x3</label>
                         </div>
                     </div>
                 </div>
@@ -733,8 +724,7 @@
 
         <div id="game-area" class="game-area">
             <div class="game-status">
-                <div class="status-text">방 코드: <span class="room-code-display" id="current-room-code">ABC123</span></div>
-                <div class="status-text">현재 차례: <strong id="current-turn">당신</strong></div>
+                <div class="status-text">방 코드: <span class="room-code-display" id="current-room-code">ABC123">ABC123</span></div>
                 <div class="status-text">선택 된 숫자: <strong id="flipped-numbers-count">0</strong></div> </div>
 
             <div class="bingo-board" id="bingo-board">
@@ -775,11 +765,16 @@
 
         // 기본 미션 목록 (localStorage에 저장된 미션이 없을 경우 사용)
         const defaultMissions = [
-            "미션1", "미션2", "미션3", "미션4", "미션5", 
-            "미션6", "미션7", "미션8", "미션9", "미션10",
-            "미션11", "미션12", "미션13", "미션14", "미션15",
-            "미션16", "미션17", "미션18", "미션19", "미션20",
-            "미션21", "미션22", "미션23", "미션24", "미션25"
+            "미션1",
+            "미션2",
+            "미션3",
+            "미션4",
+            "미션5",
+            "미션6",
+            "미션7",
+            "미션8",
+            "미션9",
+            "미션10"
         ];
 
         // 게임 상태 변수들
@@ -791,17 +786,16 @@
             players: {},
             missions: [],
             winCondition: 1,
-            boardSize: 3, // 기본값 3x3
+            boardSize: 3,
             maxPlayers: 2,
             gameStarted: false,
             bingoBoard: [],
-            currentTurn: 0,
+            currentTurn: 0, // 이 값은 더 이상 턴 제어에 사용되지 않지만, 게임 시작 시 선공 표시를 위해 유지
             playerList: [],
             roomRef: null,
             missionMap: {},
             canClaimBingo: false,
             flippedNumbers: [],
-            // hasMadeMoveInTurn: false, // 턴 종료 버튼 제거로 불필요
             isAuthReady: false
         };
 
@@ -951,8 +945,6 @@
                 gameState.playerName = playerNameInput;
                 gameState.roomCode = generateRoomCode();
                 gameState.maxPlayers = parseInt(document.getElementById('max-players-create').value);
-                // 선택된 빙고판 크기 설정
-                gameState.boardSize = parseInt(document.querySelector('input[name="board-size"]:checked').value);
                 
                 gameState.roomRef = database.ref('rooms/' + gameState.roomCode);
                 
@@ -973,7 +965,7 @@
                     maxPlayers: gameState.maxPlayers,
                     createdAt: Date.now(),
                     flippedNumbers: {},
-                    currentTurn: 0,
+                    currentTurn: 0, // 턴 개념은 남겨두지만, 셀 선택에 직접적인 영향은 없음
                     winner: null,
                     gameEnded: false,
                     missionMap: {},
@@ -1001,7 +993,6 @@
             document.getElementById('create-room-btn').classList.add('hidden-by-url-param');
             document.getElementById('max-players-create-group').classList.add('hidden-by-url-param');
             document.getElementById('main-action-buttons').classList.add('hidden-by-url-param');
-            document.getElementById('game-options-section').classList.add('hidden'); // 방 입장 시 게임 옵션 숨김
         }
 
         // 방 입장
@@ -1099,7 +1090,7 @@
                     gameState.maxPlayers = roomData.maxPlayers || 2;
                     gameState.gameStarted = roomData.gameStarted || false;
                     gameState.winCondition = roomData.winCondition || 1;
-                    gameState.currentTurn = roomData.currentTurn !== null ? roomData.currentTurn : 0;
+                    gameState.currentTurn = roomData.currentTurn !== null ? roomData.currentTurn : 0; // 이 값은 유지하되, 셀 선택 제어에는 사용 안함
                     gameState.missionMap = roomData.missionMap || {};
                     gameState.flippedNumbers = Object.keys(roomData.flippedNumbers || {}).map(Number);
                     
@@ -1133,7 +1124,7 @@
                         document.getElementById('game-area').style.display = 'none';
                     }
 
-                    updateTurnDisplay();
+                    // updateTurnDisplay(); // 턴 표시 자체는 유지하되, 셀 클릭 가능 여부에는 영향 없음
                     if (gameState.players[gameState.playerUID] && gameState.players[gameState.playerUID].boardState) {
                         syncBingoBoard(gameState.players[gameState.playerUID].boardState);
                     } else {
@@ -1141,8 +1132,8 @@
                     }
                     
                     checkBingoPossibility();
-                    updateBingoCellClickability();
-                    
+                    updateBingoCellClickability(); // 셀 클릭 가능 여부는 빙고 주장 가능 여부만 따르도록
+
                     if (gameState.isHost && gameState.playerList.length > 1) {
                         document.getElementById('first-player-section').classList.remove('hidden');
                         updateFirstPlayerOptions();
@@ -1320,17 +1311,17 @@
             
             try {
                 const winCondition = document.querySelector('input[name="win-condition"]:checked').value;
-                const selectedBoardSize = parseInt(document.querySelector('input[name="board-size"]:checked').value); // 선택된 보드 사이즈 반영
+                const selectedBoardSize = 3;
                 const selectedMaxPlayers = gameState.maxPlayers;
                 
                 console.log('Firebase room 업데이트 시도');
                 await gameState.roomRef.update({
                     gameStarted: true,
                     winCondition: parseInt(winCondition),
-                    boardSize: selectedBoardSize, // 업데이트된 boardSize 반영
+                    boardSize: selectedBoardSize,
                     maxPlayers: selectedMaxPlayers,
                     startedAt: firebase.database.ServerValue.TIMESTAMP,
-                    currentTurn: firstPlayerIndex,
+                    currentTurn: firstPlayerIndex, // 이 값은 여전히 선공 표시를 위해 유지
                     flippedNumbers: {},
                     winner: null,
                     gameEnded: false,
@@ -1371,22 +1362,6 @@
             }
         }
 
-        // 턴 표시 업데이트
-        function updateTurnDisplay() {
-            const turnElement = document.getElementById('current-turn');
-            if (turnElement && gameState.playerList.length > 0) {
-                const currentPlayerUid = gameState.playerList[gameState.currentTurn];
-                const currentPlayerName = gameState.players[currentPlayerUid]?.name || '알 수 없음';
-                const isMyTurn = currentPlayerUid === gameState.playerUID;
-                
-                if (isMyTurn) {
-                    turnElement.innerHTML = '<span style="color: #667eea; font-weight: bold;">당신의 차례입니다!</span>';
-                } else {
-                    turnElement.textContent = `${currentPlayerName}의 차례`;
-                }
-            }
-        }
-
         // 빙고판 UI 동기화
         function syncBingoBoard(myBoardStateData) {
             const totalCells = gameState.boardSize * gameState.boardSize;
@@ -1404,9 +1379,6 @@
             }
             
             const bingoBoardElement = document.getElementById('bingo-board');
-            // 클래스 업데이트
-            bingoBoardElement.className = `bingo-board size-${gameState.boardSize}`;
-            
             if (bingoBoardElement.children.length === 0 || bingoBoardElement.children.length !== totalCells) {
                 console.warn("syncBingoBoard: Waiting for bingo board DOM to be generated...");
                 setTimeout(() => syncBingoBoard(myBoardStateData), 50);
@@ -1434,7 +1406,7 @@
                         cellElement.classList.add('failed');
                         cellElement.textContent = missionText;
                     } else {
-                        // 미션이 공개되었지만, 내 보드 상태에 없거나 'unflipped' 상태라면 'flipped'로 자동 업데이트
+                        // 다른 플레이어가 뒤집었지만 내 보드 상태는 아직 'unflipped'인 경우
                         cellElement.classList.add('flipped');
                         cellElement.textContent = missionText;
                         gameState.roomRef.child(`players/${gameState.playerUID}/boardState/${cellNumber}`).set({
@@ -1449,7 +1421,7 @@
             }
         }
 
-        // 빙고 셀 클릭 가능 여부 업데이트
+        // 빙고 셀 클릭 가능 여부 업데이트 (모든 플레이어가 클릭 가능하도록 변경)
         function updateBingoCellClickability() {
             const cells = document.querySelectorAll('.bingo-cell');
             const gameEnded = gameState.gameStarted && (gameState.roomRef && gameState.roomRef.gameEnded || gameState.roomRef && gameState.roomRef.winner);
@@ -1462,7 +1434,8 @@
                     cellElement.style.pointerEvents = 'none';
                     cellElement.style.opacity = '0.7';
                 } else {
-                    // 턴과 상관없이 항상 클릭 가능하도록 변경
+                    // 게임이 시작되었고 종료되지 않았다면, 뒤집히지 않은 셀이든 뒤집힌 셀이든 클릭 가능
+                    // 뒤집히지 않은 셀은 뒤집기 위해, 뒤집힌 셀은 Failed/Flipped 토글을 위해
                     cellElement.style.pointerEvents = 'auto';
                     cellElement.style.opacity = '1';
                 }
@@ -1470,143 +1443,93 @@
         }
 
         // 빙고 가능 여부 확인
-function checkBingoPossibility() {
-    const board = gameState.bingoBoard;
-    const size = gameState.boardSize;
-    const requiredLines = gameState.winCondition;
-    let completedLines = 0;
-    const bingoButton = document.getElementById('bingo-button');
-    // const turnEndButton = document.getElementById('turn-end-button'); // 턴 종료 버튼 제거
+        function checkBingoPossibility() {
+            const board = gameState.bingoBoard;
+            const size = gameState.boardSize;
+            const requiredLines = gameState.winCondition;
+            let completedLines = 0;
+            const bingoButton = document.getElementById('bingo-button');
 
-    if (!gameState.gameStarted || !gameState.roomRef) {
-        gameState.canClaimBingo = false;
-        bingoButton.disabled = true;
-        // turnEndButton.disabled = true; // 턴 종료 버튼 제거
-        return;
-    }
+            if (!gameState.gameStarted || !gameState.roomRef) {
+                gameState.canClaimBingo = false;
+                bingoButton.disabled = true;
+                return;
+            }
 
-    gameState.roomRef.once('value').then(snapshot => {
-        const roomData = snapshot.val();
-        if (!roomData) return;
+            gameState.roomRef.once('value').then(snapshot => {
+                const roomData = snapshot.val();
+                if (!roomData) return;
 
-        if (roomData.gameEnded || roomData.winner) {
-            bingoButton.disabled = true;
-            // turnEndButton.disabled = true; // 턴 종료 버튼 제거
-            bingoButton.style.display = 'none';
-            // turnEndButton.style.display = 'none'; // 턴 종료 버튼 제거
-            return;
-        } else {
-            bingoButton.style.display = 'block';
-            // turnEndButton.style.display = 'block'; // 턴 종료 버튼 제거
-        }
-
-        // 빙고 라인 체크
-        // 가로
-        for (let i = 0; i < size; i++) {
-            let rowComplete = true;
-            for (let j = 0; j < size; j++) {
-                const index = i * size + j;
-                if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
-                    rowComplete = false;
-                    break;
+                if (roomData.gameEnded || roomData.winner) {
+                    bingoButton.disabled = true;
+                    bingoButton.style.display = 'none';
+                    return;
+                } else {
+                    bingoButton.style.display = 'block';
                 }
-            }
-            if (rowComplete) completedLines++;
-        }
 
-        // 세로
-        for (let j = 0; j < size; j++) {
-            let colComplete = true;
-            for (let i = 0; i < size; i++) {
-                const index = i * size + j;
-                if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
-                    colComplete = false;
-                    break;
+                // 빙고 라인 체크
+                for (let i = 0; i < size; i++) {
+                    let rowComplete = true;
+                    for (let j = 0; j < size; j++) {
+                        const index = i * size + j;
+                        if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
+                            rowComplete = false;
+                            break;
+                        }
+                    }
+                    if (rowComplete) completedLines++;
                 }
-            }
-            if (colComplete) completedLines++;
-        }
 
-        // 대각선 1
-        let diag1Complete = true;
-        for (let i = 0; i < size; i++) {
-            const index = i * size + i;
-            if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
-                diag1Complete = false;
-                break;
-            }
-        }
-        if (diag1Complete) completedLines++;
+                for (let j = 0; j < size; j++) {
+                    let colComplete = true;
+                    for (let i = 0; i < size; i++) {
+                        const index = i * size + j;
+                        if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
+                            colComplete = false;
+                            break;
+                        }
+                    }
+                    if (colComplete) completedLines++;
+                }
 
-        // 대각선 2
-        let diag2Complete = true;
-        for (let i = 0; i < size; i++) {
-            const index = i * size + (size - 1 - i);
-            if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
-                diag2Complete = false;
-                break;
-            }
+                let diag1Complete = true;
+                for (let i = 0; i < size; i++) {
+                    const index = i * size + i;
+                    if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
+                        diag1Complete = false;
+                        break;
+                    }
+                }
+                if (diag1Complete) completedLines++;
+
+                let diag2Complete = true;
+                for (let i = 0; i < size; i++) {
+                    const index = i * size + (size - 1 - i);
+                    if (!board[index] || !roomData.players[gameState.playerUID] || !roomData.players[gameState.playerUID].boardState || roomData.players[gameState.playerUID].boardState[board[index].number]?.state !== 'flipped') {
+                        diag2Complete = false;
+                        break;
+                    }
+                }
+                if (diag2Complete) completedLines++;
+                
+                console.log(`${gameState.playerName}: 현재 완성된 라인 수 = ${completedLines}`);
+
+                if (completedLines >= requiredLines) {
+                    gameState.canClaimBingo = true;
+                    bingoButton.disabled = roomData.gameEnded || roomData.winner; 
+                } else {
+                    gameState.canClaimBingo = false;
+                    bingoButton.disabled = true;
+                }
+
+            }).catch(error => {
+                console.error("Error checking bingo possibility:", error);
+                showMessage("빙고/턴 상태 확인 중 오류 발생!", "error");
+                bingoButton.disabled = true;
+            });
         }
-        if (diag2Complete) completedLines++;
         
-        console.log(`${gameState.playerName}: 현재 완성된 라인 수 = ${completedLines}`);
-
-        if (completedLines >= requiredLines) {
-            gameState.canClaimBingo = true;
-            bingoButton.disabled = roomData.gameEnded || roomData.winner; 
-        } else {
-            gameState.canClaimBingo = false;
-            bingoButton.disabled = true;
-        }
-
-        // 턴 종료 버튼 제거로 인한 불필요한 코드 제거
-        // turnEndButton.disabled = !isMyTurn || roomData.gameEnded || roomData.winner || !gameState.hasMadeMoveInTurn;
-
-    }).catch(error => {
-        console.error("Error checking bingo possibility:", error);
-        showMessage("빙고/턴 상태 확인 중 오류 발생!", "error");
-        bingoButton.disabled = true;
-        // turnEndButton.disabled = true; // 턴 종료 버튼 제거
-    });
-}
-        // 턴 종료 (이 함수는 이제 사용되지 않음)
-        /*
-        async function turnEnd() {
-            const currentPlayerUid = gameState.playerList[gameState.currentTurn];
-            if (currentPlayerUid !== gameState.playerUID) {
-                showMessage('당신의 차례가 아닙니다!', 'error');
-                return;
-            }
-
-            const roomSnapshot = await gameState.roomRef.once('value');
-            const roomData = roomSnapshot.val();
-
-            if (roomData.gameEnded || roomData.winner) {
-                showMessage('게임은 이미 종료되었습니다!', 'error');
-                return;
-            }
-
-            if (!gameState.hasMadeMoveInTurn) {
-                showMessage('셀을 하나라도 뒤집어야 턴을 종료할 수 있습니다!', 'error');
-                return;
-            }
-
-            try {
-                const nextTurn = (gameState.currentTurn + 1) % gameState.playerList.length;
-                await gameState.roomRef.update({
-                    currentTurn: nextTurn
-                });
-                showMessage('턴을 종료했습니다.', 'info');
-                gameState.hasMadeMoveInTurn = false;
-                document.getElementById('turn-end-button').disabled = true;
-                document.getElementById('bingo-button').disabled = true;
-            } catch (error) {
-                showMessage('턴 종료에 실패했습니다: ' + error.message, 'error');
-                console.error('Turn End Error:', error);
-            }
-        }
-        */
-
         // 빙고 승리 주장
         async function claimBingo() {
             if (!gameState.canClaimBingo) {
@@ -1653,7 +1576,6 @@ function checkBingoPossibility() {
                 }
                 document.getElementById('bingo-button').disabled = true;
                 document.getElementById('bingo-button').style.display = 'none';
-                // document.getElementById('turn-end-button').style.display = 'none'; // 턴 종료 버튼 제거
             } catch (error) {
                 showMessage('빙고 주장 중 오류가 발생했습니다: ' + error.message, 'error');
                 console.error('Claim Bingo Error:', error);
@@ -1702,24 +1624,20 @@ function checkBingoPossibility() {
                 gameState.roomRef.off();
                 // 플레이어가 방을 나갈 때만 Firebase에서 플레이어 정보 삭제
                 // 호스트가 나갈 때 방 전체를 삭제하는 로직은 추가하지 않음 (게임의 일관성을 위해)
-                const playerRef = gameState.roomRef.child('players').child(gameState.playerUID);
-                const playerSnapshot = await playerRef.once('value');
-                if (playerSnapshot.exists()) {
-                    playerRef.remove()
-                        .then(() => {
-                            console.log(`플레이어 ${gameState.playerName}이(가) 방을 나갑니다. UID: ${gameState.playerUID}`);
-                            // playerOrderUids 배열에서도 해당 UID 제거
-                            return gameState.roomRef.child('playerOrderUids').transaction((currentUids) => {
-                                if (currentUids) {
-                                    return currentUids.filter(uid => uid !== gameState.playerUID);
-                                }
-                                return [];
-                            });
-                        })
-                        .catch(error => {
-                            console.error("방 나가기 중 오류 발생:", error);
+                gameState.roomRef.child('players').child(gameState.playerUID).remove()
+                    .then(() => {
+                        console.log(`플레이어 ${gameState.playerName}이(가) 방을 나갑니다. UID: ${gameState.playerUID}`);
+                        // playerOrderUids 배열에서도 해당 UID 제거
+                        gameState.roomRef.child('playerOrderUids').transaction((currentUids) => {
+                            if (currentUids) {
+                                return currentUids.filter(uid => uid !== gameState.playerUID);
+                            }
+                            return [];
                         });
-                }
+                    })
+                    .catch(error => {
+                        console.error("방 나가기 중 오류 발생:", error);
+                    });
             }
             
             const oldPlayerUID = gameState.playerUID;
@@ -1732,17 +1650,16 @@ function checkBingoPossibility() {
                 missions: [],
                 isAuthReady: true, // 로그인 상태 유지
                 winCondition: 1,
-                boardSize: 3, // 초기값으로 재설정
+                boardSize: 3,
                 maxPlayers: 2,
                 gameStarted: false,
                 bingoBoard: [],
-                currentTurn: 0,
+                currentTurn: 0, 
                 playerList: [],
                 roomRef: null,
                 missionMap: {},
                 canClaimBingo: false,
                 flippedNumbers: [],
-                // hasMadeMoveInTurn: false // 턴 종료 버튼 제거로 불필요
             };
             
             // UI 초기화
@@ -1763,15 +1680,15 @@ function checkBingoPossibility() {
             document.getElementById('room-code').value = '';
             document.getElementById('bingo-button').style.display = 'block';
             document.getElementById('bingo-button').disabled = true;
-            // document.getElementById('turn-end-button').style.display = 'block'; // 턴 종료 버튼 제거
-            // document.getElementById('turn-end-button').disabled = true; // 턴 종료 버튼 제거
+            // 턴 종료 버튼 관련 UI 제거
+            // document.getElementById('turn-end-button').style.display = 'block';
+            // document.getElementById('turn-end-button').disabled = true;
             
             const winnerOverlay = document.getElementById('winner-overlay');
             if (winnerOverlay) {
                 winnerOverlay.remove();
             }
 
-            // 빙고판 크기 초기값 설정
             document.getElementById('size-3').checked = true;
             document.getElementById('win-1').checked = true;
             document.getElementById('max-players-create').value = 2;
@@ -1856,10 +1773,8 @@ function checkBingoPossibility() {
             }
             
             const bingoBoardElement = document.getElementById('bingo-board');
-            bingoBoardElement.className = `bingo-board size-${size}`; // 클래스 추가로 CSS 동적 적용
-            
-            if (gameState.bingoBoard.length === totalCells && bingoBoardElement.children.length === totalCells) {
-                // 이미 생성된 보드가 있다면 다시 그릴 필요 없음
+            if (gameState.bingoBoard.length === totalCells && bingoBoardElement.children.length === totalCells && bingoBoardElement.classList.contains(`size-${size}`)) {
+                bingoBoardElement.className = `bingo-board size-${size}`;
                 return;
             }
 
@@ -1872,6 +1787,7 @@ function checkBingoPossibility() {
                 mission: gameState.missionMap[num] || `미션 ${num}`
             }));
             
+            bingoBoardElement.className = `bingo-board size-${size}`;
             bingoBoardElement.innerHTML = gameState.bingoBoard.map((cell, index) =>
                 `<div class="bingo-cell" onclick="flipCell(${index})">${cell.number}</div>`
             ).join('');
@@ -1896,9 +1812,9 @@ function checkBingoPossibility() {
                 const isFlippedCommon = gameState.flippedNumbers.includes(selectedNumber);
                 const myCurrentState = roomData.players[gameState.playerUID]?.boardState?.[selectedNumber]?.state || 'unflipped';
 
+                // 모든 플레이어가 셀을 뒤집을 수 있도록 변경
                 if (!isFlippedCommon) {
-                    // 공개되지 않은 셀을 클릭한 경우
-                    // 누구나 클릭하면 공개되도록 함 (턴 개념 제거)
+                    // 아직 뒤집히지 않은 셀이라면, 중앙의 flippedNumbers에도 추가
                     const flippedResult = await gameState.roomRef.child('flippedNumbers').child(selectedNumber).transaction((currentValue) => {
                         if (currentValue === null) {
                             return true;
@@ -1907,34 +1823,24 @@ function checkBingoPossibility() {
                     });
 
                     if (!flippedResult.committed) {
-                        showMessage('이미 다른 플레이어가 이 숫자를 뒤집었거나 문제가 발생했습니다.', 'error');
+                        showMessage('이미 다른 플레이어가 이 미션을 선택했습니다.', 'error');
                         return;
                     }
                 }
 
-                // 내 빙고판 상태 업데이트 로직 (flipped <-> failed 전환)
                 const myBoardStateRef = gameState.roomRef.child(`players/${gameState.playerUID}/boardState/${selectedNumber}`);
                 
+                // 내 보드 상태만 변경 (flipped <-> failed 토글)
                 const boardStateResult = await myBoardStateRef.transaction((currentMyStateData) => {
                     let stateForMeInFirebase = currentMyStateData ? currentMyStateData.state : 'unflipped';
                     let nextStateForMe;
 
-                    if (isFlippedCommon) { // 이미 공개된 셀
-                        if (stateForMeInFirebase === 'flipped') {
-                            nextStateForMe = 'failed';
-                        } else if (stateForMeInFirebase === 'failed') {
-                            nextStateForMe = 'flipped';
-                        } else { // 'unflipped' 상태였으나, 이미 공개된 셀인 경우 (초기 진입 등)
-                            nextStateForMe = 'flipped';
-                        }
-                    } else { // 방금 공개된 셀 (즉, flippedNumbers에 아직 없는 상태)
-                        if (stateForMeInFirebase === 'unflipped') {
-                            nextStateForMe = 'flipped';
-                        } else if (stateForMeInFirebase === 'failed') { // failed 였다가 다시 뒤집는 경우
-                             nextStateForMe = 'flipped';
-                        } else {
-                            return undefined; // 그 외의 경우 (예: 이미 'flipped'인데 또 클릭)
-                        }
+                    if (stateForMeInFirebase === 'flipped') {
+                        nextStateForMe = 'failed';
+                    } else if (stateForMeInFirebase === 'failed') {
+                        nextStateForMe = 'flipped';
+                    } else { // 'unflipped' 이거나 초기 상태인 경우
+                        nextStateForMe = 'flipped';
                     }
                     
                     return {
@@ -2031,7 +1937,7 @@ function checkBingoPossibility() {
             nameInput.placeholder = '닉네임을 입력하고 입장하세요!';
             
             hintElement.classList.remove('hidden');
-            gameOptionsSection.classList.add('hidden'); // 자동 입장 시 게임 옵션 숨김
+            gameOptionsSection.classList.add('hidden');
 
             if (document.activeElement !== nameInput) {
                 nameInput.focus();
@@ -2073,32 +1979,17 @@ function checkBingoPossibility() {
                 e.target.value = e.target.value.toUpperCase();
             });
 
-            // 빙고판 크기 라디오 버튼 변경 이벤트 리스너
             document.querySelectorAll('input[name="board-size"]').forEach(radio => {
                 radio.addEventListener('change', () => {
                     const newSize = parseInt(radio.value);
                     gameState.boardSize = newSize;
-                    updateMissionsDisplay(); // 필요한 미션 개수 업데이트
+                    updateMissionsDisplay();
                 });
             });
 
             loadMissions();
             // 미션 추가 버튼 초기 상태 설정
             document.getElementById('add-mission-btn').disabled = !gameState.roomCode;
-
-            // '새 방 만들기' 버튼 이벤트 리스너 추가
-            const createRoomButton = document.getElementById('create-room-btn');
-            if (createRoomButton) { // 요소가 존재하는지 확인
-                createRoomButton.addEventListener('click', createRoom); 
-            }
-
-            // '방 입장' 버튼 이벤트 리스너 추가
-            const joinRoomButton = document.querySelector('button[onclick="joinRoom()"]');
-            if (joinRoomButton) {
-                // 기존 onclick 속성을 제거하거나, 이 리스너를 사용하여 대체
-                joinRoomButton.onclick = null; // 기존 inline onclick 제거
-                joinRoomButton.addEventListener('click', () => joinRoom());
-            }
         });
 
         // 페이지 이탈 시 정리
