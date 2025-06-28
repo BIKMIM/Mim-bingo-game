@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>밈주머니 빙고 게임</title>
     <style>
-        // 기본 스타일 초기화 //
+        /* 기본 스타일 초기화 */
         * {
             [cite_start]margin: 0; [cite: 1]
             [cite_start]padding: 0; [cite: 2]
             [cite_start]box-sizing: border-box; [cite: 2]
         }
 
-        // 전체 페이지 배경 및 폰트 //
+        /* 전체 페이지 배경 및 폰트 */
         body {
             [cite_start]font-family: Arial, sans-serif; [cite: 2]
             [cite_start]background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); [cite: 3]
@@ -24,7 +24,7 @@
             [cite_start]justify-content: center; [cite: 3]
         [cite_start]} [cite: 4]
 
-        // 메인 컨테이너 //
+        /* 메인 컨테이너 */
         .container {
             [cite_start]max-width: 1200px; [cite: 4]
             [cite_start]width: 100%; [cite: 5]
@@ -35,7 +35,7 @@
             [cite_start]overflow: hidden; [cite: 5]
         [cite_start]} [cite: 6]
 
-        // 헤더 //
+        /* 헤더 */
         .header {
             [cite_start]background: #4a5568; [cite: 6]
             [cite_start]color: white; [cite: 7]
@@ -43,18 +43,18 @@
             [cite_start]text-align: center; [cite: 7]
         }
 
-        // 게임 설정 섹션 //
+        /* 게임 설정 섹션 */
         .game-setup {
             [cite_start]padding: 30px; [cite: 7]
             [cite_start]border-bottom: 2px solid #e2e8f0; [cite: 8]
         }
 
-        // 방 관련 섹션 //
+        /* 방 관련 섹션 */
         .room-section {
             [cite_start]margin-bottom: 30px; [cite: 8]
         }
 
-        // 입력 그룹 (라벨 + 인풋) //
+        /* 입력 그룹 (라벨 + 인풋) */
         .input-group {
             [cite_start]margin-bottom: 15px; [cite: 9]
         }
@@ -79,14 +79,14 @@
             [cite_start]border-color: #667eea; [cite: 14]
         }
 
-        // 버튼 그룹 //
+        /* 버튼 그룹 */
         .button-group {
             [cite_start]display: flex; [cite: 14]
             [cite_start]gap: 10px; [cite: 15]
             [cite_start]flex-wrap: wrap; [cite: 15]
         }
 
-        // 일반 버튼 스타일 //
+        /* 일반 버튼 스타일 */
         .btn {
             [cite_start]padding: 12px 24px; [cite: 15]
             [cite_start]border: none; [cite: 16]
@@ -114,7 +114,7 @@
             [cite_start]background: #cbd5e0; [cite: 20]
         [cite_start]} [cite: 21]
 
-        // 비활성화된 버튼 스타일 //
+        /* 비활성화된 버튼 스타일 */
         .btn:disabled {
             [cite_start]background: #cbd5e0 !important; [cite: 21]
             [cite_start]color: #a0aec0 !important; [cite: 22]
@@ -122,7 +122,7 @@
             [cite_start]opacity: 0.6; [cite: 22]
         }
 
-        // 플레이어 목록 섹션 //
+        /* 플레이어 목록 섹션 */
         .players-section {
             [cite_start]margin-bottom: 30px; [cite: 22]
         [cite_start]} [cite: 23]
@@ -146,7 +146,7 @@
             [cite_start]border-left-color: #f56565; [cite: 26]
         [cite_start]} [cite: 27]
 
-        // 미션 섹션 //
+        /* 미션 섹션 */
         .missions-section {
             [cite_start]margin-bottom: 30px; [cite: 27]
         [cite_start]} [cite: 28]
@@ -189,7 +189,7 @@
             [cite_start]font-size: 12px; [cite: 34]
         [cite_start]} [cite: 35]
 
-        // 게임 옵션 섹션 //
+        /* 게임 옵션 섹션 */
         .game-options {
             [cite_start]display: flex; [cite: 35]
             [cite_start]gap: 20px; [cite: 36]
@@ -209,26 +209,26 @@
             [cite_start]gap: 5px; [cite: 38]
         }
 
-        // 게임 진행 화면 //
+        /* 게임 진행 화면 */
         .game-area {
             [cite_start]padding: 30px; [cite: 38]
             [cite_start]display: none; [cite: 39]
         }
 
-        // 빙고판 //
+        /* 빙고판 */
         .bingo-board {
             [cite_start]display: grid; [cite: 39]
             [cite_start]gap: 10px; [cite: 40]
             [cite_start]max-width: 500px; [cite: 40]
             [cite_start]margin: 0 auto 30px auto; [cite: 40]
             [cite_start]grid-template-columns: repeat(3, 1fr); [cite: 40]
-            // 3x3으로 고정 //
+            /* 3x3으로 고정 */
         [cite_start]} [cite: 41]
 
-        // 빙고 셀 //
+        /* 빙고 셀 */
         .bingo-cell {
             [cite_start]aspect-ratio: 1; [cite: 41]
-            // 가로세로 비율 1:1 유지 //
+            /* 가로세로 비율 1:1 유지 */
             [cite_start]background: #e2e8f0; [cite: 42]
             [cite_start]border: 2px solid #cbd5e0; [cite: 43]
             [cite_start]border-radius: 8px; [cite: 43]
@@ -240,13 +240,13 @@
             [cite_start]cursor: pointer; [cite: 44]
             [cite_start]transition: all 0.3s; [cite: 44]
             [cite_start]color: #4a5568; [cite: 44]
-            word-break: break-all; // 긴 텍스트 강제 줄바꿈 (유지) //
+            word-break: break-all; /* 긴 텍스트 강제 줄바꿈 (유지) */
             [cite_start]text-align: center; [cite: 44]
             [cite_start]padding: 5px; [cite: 45]
             
-            // [핵심 수정 1] 화면 움찔거림(flicker) 방지 //
+            /* [핵심 수정 1] 화면 움찔거림(flicker) 방지 */
             [cite_start]overflow: hidden; [cite: 45]
-            // [핵심 수정 2] 패딩으로 인한 크기 변경 방지 //
+            /* [핵심 수정 2] 패딩으로 인한 크기 변경 방지 */
             [cite_start]box-sizing: border-box; [cite: 46]
         [cite_start]} [cite: 47]
 
@@ -254,31 +254,31 @@
             [cite_start]background: #cbd5e0; [cite: 47]
         [cite_start]} [cite: 48]
 
-        // Flipped (체크됨) 및 Failed (실패) 상태 //
+        /* Flipped (체크됨) 및 Failed (실패) 상태 */
         .bingo-cell.flipped,
         .bingo-cell.failed {
             [cite_start]color: white; [cite: 48]
-            // [핵심 수정 3] 동적/반응형 폰트 크기 적용 //
-            // 화면 너비에 따라 폰트 크기를 8px ~ 13px 사이에서 유연하게 조절합니다.
-            [cite_start]// [cite: 50]
+            /* [핵심 수정 3] 동적/반응형 폰트 크기 적용 */
+            /* 화면 너비에 따라 폰트 크기를 8px ~ 13px 사이에서 유연하게 조절합니다.
+            [cite_start]*/ [cite: 50]
             [cite_start]font-size: clamp(8px, 3vw, 13px); [cite: 51]
-            // [핵심 수정 4] 줄 간격을 조절하여 가독성 확보 //
+            /* [핵심 수정 4] 줄 간격을 조절하여 가독성 확보 */
             [cite_start]line-height: 1.15; [cite: 52]
         }
 
-        // Flipped (체크됨) 상태 고유 스타일 //
+        /* Flipped (체크됨) 상태 고유 스타일 */
         .bingo-cell.flipped {
             [cite_start]background: #667eea; [cite: 52]
         [cite_start]} [cite: 53]
 
-        // Failed (실패) 상태 고유 스타일 //
+        /* Failed (실패) 상태 고유 스타일 */
         .bingo-cell.failed {
             [cite_start]background: #f56565; [cite: 53]
             [cite_start]text-decoration: line-through; [cite: 54]
             [cite_start]opacity: 0.7; [cite: 54]
         }
 
-        // 게임 상태 표시 //
+        /* 게임 상태 표시 */
         .game-status {
             [cite_start]text-align: center; [cite: 54]
             [cite_start]margin-bottom: 20px; [cite: 55]
@@ -300,19 +300,19 @@
             [cite_start]display: inline-block; [cite: 58]
         }
 
-        // 숨김 처리 //
+        /* 숨김 처리 */
         .hidden {
             [cite_start]display: none; [cite: 59]
         }
 
-        // 로딩 메시지 //
+        /* 로딩 메시지 */
         .loading {
             [cite_start]text-align: center; [cite: 59]
             [cite_start]color: #667eea; [cite: 60]
             [cite_start]font-style: italic; [cite: 60]
         }
 
-        // 오류 메시지 //
+        /* 오류 메시지 */
         .error {
             [cite_start]background: #fed7d7; [cite: 60]
             [cite_start]color: #c53030; [cite: 61]
@@ -321,7 +321,7 @@
             [cite_start]margin: 10px 0; [cite: 61]
         }
 
-        // 성공 메시지 //
+        /* 성공 메시지 */
         .success {
             [cite_start]background: #c6f6d5; [cite: 61]
             [cite_start]color: #2f855a; [cite: 62]
@@ -330,7 +330,7 @@
             [cite_start]margin: 10px 0; [cite: 62]
         }
 
-        // Bingo Button 스타일 //
+        /* Bingo Button 스타일 */
         #bingo-button {
             [cite_start]background-color: #4CAF50; [cite: 63]
             [cite_start]color: white; [cite: 63]
@@ -343,7 +343,7 @@
             [cite_start]transition: background-color 0.3s ease, transform 0.1s ease; [cite: 64]
             [cite_start]margin-top: 20px; [cite: 64]
             [cite_start]display: block; [cite: 65]
-            // 항상 보이도록 설정 //
+            /* 항상 보이도록 설정 */
             [cite_start]width: 100%; [cite: 65]
             [cite_start]max-width: 300px; [cite: 66]
             [cite_start]box-sizing: border-box; [cite: 66]
@@ -360,16 +360,16 @@
             [cite_start]opacity: 0.7; [cite: 70]
         }
 
-        // 버튼 컨테이너 //
+        /* 버튼 컨테이너 */
         .game-buttons {
             [cite_start]display: flex; [cite: 71]
             [cite_start]flex-direction: column; [cite: 71]
             [cite_start]align-items: center; [cite: 71]
             [cite_start]gap: 10px; [cite: 71]
-            box-sizing: border-box; // 추가: 패딩 포함 너비 계산 //
+            box-sizing: border-box; /* 추가: 패딩 포함 너비 계산 */
         }
 
-        // 비밀번호 입력 팝업용 오버레이 //
+        /* 비밀번호 입력 팝업용 오버레이 */
         .password-overlay {
             [cite_start]position: fixed; [cite: 71]
             [cite_start]top: 0; [cite: 72]
@@ -380,7 +380,7 @@
             [cite_start]display: flex; [cite: 72]
             [cite_start]justify-content: center; [cite: 73]
             [cite_start]align-items: center; [cite: 73]
-            z-index: 2000; // 승리 오버레이보다 높게 설정 //
+            z-index: 2000; /* 승리 오버레이보다 높게 설정 */
         }
 
         .password-prompt {
@@ -400,7 +400,7 @@
 
         .password-prompt input {
             [cite_start]width: calc(100% - 24px); [cite: 76]
-            // 패딩 고려 //
+            /* 패딩 고려 */
             [cite_start]padding: 12px; [cite: 77]
             [cite_start]margin-bottom: 15px; [cite: 78]
             [cite_start]border: 1px solid #e2e8f0; [cite: 78]
@@ -422,7 +422,7 @@
             [cite_start]background-color: #5a67d8; [cite: 81]
         [cite_start]} [cite: 81]
 
-        // 승리 메시지 오버레이 //
+        /* 승리 메시지 오버레이 */
         .winner-overlay {
             [cite_start]position: fixed; [cite: 81]
             [cite_start]top: 0; [cite: 82]
@@ -430,7 +430,7 @@
             [cite_start]width: 100%; [cite: 82]
             [cite_start]height: 100%; [cite: 82]
             [cite_start]background-color: rgba(0, 0, 0, 0.7); [cite: 83]
-            // 반투명 검정 배경 //
+            /* 반투명 검정 배경 */
             [cite_start]display: flex; [cite: 83]
             [cite_start]justify-content: center; [cite: 84]
             [cite_start]align-items: center; [cite: 84]
@@ -440,9 +440,9 @@
 
         .winner-message {
             [cite_start]background-color: white; [cite: 84]
-            // 팝업 배경색 흰색 //
+            /* 팝업 배경색 흰색 */
             [cite_start]color: #4a5568; [cite: 85]
-            // 기본 텍스트 색상 //
+            /* 기본 텍스트 색상 */
             [cite_start]font-size: 3em; [cite: 86]
             [cite_start]font-weight: bold; [cite: 87]
             [cite_start]text-align: center; [cite: 87]
@@ -458,13 +458,13 @@
             [cite_start]gap: 15px; [cite: 89]
         }
 
-        // 텍스트에만 그라데이션 적용 //
+        /* 텍스트에만 그라데이션 적용 */
         .gradient-text {
             [cite_start]background: linear-gradient(45deg, #f3ec78, #af4261); [cite: 90]
             [cite_start]-webkit-background-clip: text; [cite: 90]
             [cite_start]-webkit-text-fill-color: transparent; [cite: 90]
             [cite_start]background-clip: text; [cite: 90]
-            color: transparent; // Fallback for browsers not supporting text-fill-color //
+            color: transparent; /* Fallback for browsers not supporting text-fill-color */
         }
 
         .winner-message .emoji {
@@ -493,7 +493,7 @@
             [cite_start]background-color: #5a67d8; [cite: 95]
         [cite_start]} [cite: 95]
 
-        // 애니메이션 키프레임 //
+        /* 애니메이션 키프레임 */
         @keyframes fadeIn {
             [cite_start]from { opacity: 0; [cite: 96] }
             [cite_start]to { opacity: 1; [cite: 97] }
@@ -504,7 +504,7 @@
             [cite_start]to { transform: scale(1); opacity: 1; [cite: 99] }
         }
 
-        // 반응형 디자인 //
+        /* 반응형 디자인 */
         @media (max-width: 768px) {
             .container {
                 [cite_start]margin: 10px; [cite: 100]
@@ -525,47 +525,47 @@
             }
         }
 
-        // 새로운 flex 컨테이너를 위한 스타일 //
+        /* 새로운 flex 컨테이너를 위한 스타일 */
         .create-room-controls {
             [cite_start]display: flex; [cite: 104]
             [cite_start]flex-wrap: wrap; [cite: 104]
-            align-items: flex-end; // 버튼과 드롭다운이 바닥선에 정렬되도록 //
+            align-items: flex-end; /* 버튼과 드롭다운이 바닥선에 정렬되도록 */
             [cite_start]gap: 10px; [cite: 105]
             [cite_start]margin-top: 15px; [cite: 105]
         }
 
         .create-room-controls .input-group {
             [cite_start]margin-bottom: 0; [cite: 106]
-            // 이 그룹 내부의 input-group은 마진 제거 //
+            /* 이 그룹 내부의 input-group은 마진 제거 */
         }
 
-        // max-players select box의 너비를 조정하여 버튼과 잘 어울리게 //
+        /* max-players select box의 너비를 조정하여 버튼과 잘 어울리게 */
         .create-room-controls #max-players-create {
             [cite_start]width: auto; [cite: 107]
-            // 자동 너비 //
+            /* 자동 너비 */
             [cite_start]min-width: 100px; [cite: 108]
-            // 최소 너비 설정 //
+            /* 최소 너비 설정 */
             [cite_start]flex-grow: 1; [cite: 109]
-            // 남은 공간을 채우도록 성장 //
+            /* 남은 공간을 채우도록 성장 */
         }
 
-        // '새 방 만들기' 버튼 크기 키우기 //
+        /* '새 방 만들기' 버튼 크기 키우기 */
         .create-room-controls #create-room-btn {
             [cite_start]padding: 15px 30px; [cite: 110]
-            // 패딩을 늘려 크기 키움 //
+            /* 패딩을 늘려 크기 키움 */
             [cite_start]font-size: 18px; [cite: 111]
-            // 글자 크기 키움 //
+            /* 글자 크기 키움 */
             [cite_start]flex-shrink: 0; [cite: 112]
-            // 줄어들지 않도록 //
+            /* 줄어들지 않도록 */
         }
 
-        // 방 입장하기 버튼 숨김을 위한 클래스 추가 (초대링크 시) //
+        /* 방 입장하기 버튼 숨김을 위한 클래스 추가 (초대링크 시) */
         .hidden-by-url-param {
             [cite_start]display: none !important; [cite: 113]
-            // 우선순위 높임 //
+            /* 우선순위 높임 */
         }
 
-        // 최대 플레이어 수 드롭다운의 label과 select가 가로로 나란히 오도록 //
+        /* 최대 플레이어 수 드롭다운의 label과 select가 가로로 나란히 오도록 */
         .input-group.inline-label {
             [cite_start]display: flex; [cite: 114]
             [cite_start]align-items: center; [cite: 114]
@@ -575,16 +575,16 @@
 
         .input-group.inline-label label {
             [cite_start]margin-bottom: 0; [cite: 115]
-            flex-shrink: 0; // 라벨이 줄어들지 않도록 //
+            flex-shrink: 0; /* 라벨이 줄어들지 않도록 */
         [cite_start]} [cite: 115]
         .input-group.inline-label select {
             [cite_start]width: auto; [cite: 116]
-            // select가 자동으로 너비 조정 //
+            /* select가 자동으로 너비 조정 */
             [cite_start]flex-grow: 1; [cite: 117]
-            // 남은 공간 채우기 //
+            /* 남은 공간 채우기 */
         [cite_start]} [cite: 117]
 
-        // 로딩 인디케이터 추가 //
+        /* 로딩 인디케이터 추가 */
         .loading-indicator {
             [cite_start]display: inline-block; [cite: 118]
             [cite_start]width: 16px; [cite: 118]
@@ -609,7 +609,7 @@
             <h1>🎯 밈주머니 빙고 게임!</h1>
             <p>밈주머니와 함께 즐기는 쐐기 빙고!</p>
             <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
-                v4.982 - 턴 삭제
+                v4.94 - 미션 기능 개선
             [cite_start]</div> [cite: 122]
         </div>
 
