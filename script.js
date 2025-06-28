@@ -19,13 +19,11 @@ let gameState = {
     maxPlayers: 2,
     gameStarted: false,
     bingoBoard: [],
-    // currentTurn: 0, // 턴 개념 제거로 삭제 (이미 주석 처리되어 있었음)
     playerList: [],
     roomRef: null,
     missionMap: {},
     canClaimBingo: false,
     flippedNumbers: [],
-    // hasMadeMoveInTurn: false, // 턴 개념 제거로 삭제 (이미 주석 처리되어 있었음)
     isAuthReady: false
 };
 
@@ -68,32 +66,35 @@ function showMessage(message, type = 'info') {
 }
 
 // --- 익명 로그인 처리 로직 ---
-auth.onAuthStateChanged(user => {
-    if (user) {
-        console.log("Firebase Anonymous User UID:", user.uid);
-        gameState.playerUID = user.uid;
-        gameState.isAuthReady = true;
-        updateButtonStates();
-        
-        // URL 파라미터 체크 (자동 입장)
-        checkURLParams();
-    } else {
-        console.log("No Firebase user logged in. Signing in anonymously...");
-        gameState.isAuthReady = false;
-        updateButtonStates();
-        
-        auth.signInAnonymously()
-            .then(() => {
+// async 함수로 래핑하여 await 사용 가능하도록 수정
+(async () => {
+    auth.onAuthStateChanged(async user => { // onAuthStateChanged 콜백을 async로 선언
+        if (user) {
+            console.log("Firebase Anonymous User UID:", user.uid);
+            gameState.playerUID = user.uid;
+            gameState.isAuthReady = true;
+            updateButtonStates();
+            
+            // URL 파라미터 체크 (자동 입장)
+            await checkURLParams(); // await 추가
+        } else {
+            console.log("No Firebase user logged in. Signing in anonymously...");
+            gameState.isAuthReady = false;
+            updateButtonStates();
+            
+            try {
+                await auth.signInAnonymously();
                 // 성공적으로 익명 로그인되었으므로, onAuthStateChanged 콜백이 다시 호출될 것입니다.
-            })
-            .catch((error) => {
+            } catch (error) {
                 console.error("Error signing in anonymously:", error);
                 showMessage('게임에 접속할 수 없습니다. 페이지를 새로고침해주세요.', 'error');
                 gameState.isAuthReady = false;
                 updateButtonStates();
-            });
-    }
-});
+            }
+        }
+    });
+})(); // IIFE (즉시 실행 함수)로 래핑
+
 
 // 비밀번호 입력 팝업 생성 함수
 function createPasswordPrompt() {
@@ -193,11 +194,6 @@ async function createRoom() {
             maxPlayers: gameState.maxPlayers,
             createdAt: Date.now(),
             flippedNumbers: {},
-            // currentTurn: 0, // 턴 개념 제거로 삭제
-            winner: null,
-            gameEnded: false,
-            missionMap: {},
-            bingoClaimed: null,
             playerOrderUids: [gameState.playerUID]
         });
 
@@ -318,7 +314,6 @@ function setupRoomListeners() {
             gameState.maxPlayers = roomData.maxPlayers || 2;
             gameState.gameStarted = roomData.gameStarted || false;
             gameState.winCondition = roomData.winCondition || 1;
-            // gameState.currentTurn = roomData.currentTurn !== null ? roomData.currentTurn : 0; // 턴 개념 제거로 삭제
             gameState.missionMap = roomData.missionMap || {};
             gameState.flippedNumbers = Object.keys(roomData.flippedNumbers || {}).map(Number);
             
@@ -352,7 +347,6 @@ function setupRoomListeners() {
                 document.getElementById('game-area').style.display = 'none';
             }
 
-            // updateTurnDisplay(); // 턴 개념 제거로 삭제됨
             if (gameState.players[gameState.playerUID] && gameState.players[gameState.playerUID].boardState) {
                 syncBingoBoard(gameState.players[gameState.playerUID].boardState);
             } else {
@@ -360,22 +354,17 @@ function setupRoomListeners() {
             }
             
             checkBingoPossibility();
-            updateBingoCellClickability(); // 턴 개념 제거에 따라 내부 로직 수정됨
+            updateBingoCellClickability();
             
-            // 선공 플레이어 섹션 관련 로직은 이미 이전 단계에서 제거했으므로 더 이상 수정할 필요 없습니다.
-
             if (roomData.winner) {
                 displayWinnerMessage(roomData.winner, roomData.winCondition);
                 document.getElementById('bingo-button').disabled = true;
-                // document.getElementById('turn-end-button').disabled = true; // 턴 개념 제거로 삭제됨
                 document.getElementById('bingo-button').style.display = 'none';
-                // document.getElementById('turn-end-button').style.display = 'none'; // 턴 개념 제거로 삭제됨
             } else {
                 const winnerOverlay = document.getElementById('winner-overlay');
                 if (winnerOverlay) winnerOverlay.remove();
                 if (gameState.gameStarted) {
                     document.getElementById('bingo-button').style.display = 'block';
-                    // document.getElementById('turn-end-button').style.display = 'block'; // 턴 개념 제거로 삭제됨
                 }
             }
             // 미션 추가 버튼 활성화/비활성화
@@ -534,7 +523,6 @@ async function startGame() {
             boardSize: selectedBoardSize,
             maxPlayers: selectedMaxPlayers,
             startedAt: firebase.database.ServerValue.TIMESTAMP,
-            // currentTurn: 0, // 턴 개념 제거로 삭제
             flippedNumbers: {},
             winner: null,
             gameEnded: false,
@@ -622,15 +610,10 @@ function syncBingoBoard(myBoardStateData) {
 // 빙고 셀 클릭 가능 여부 업데이트
 function updateBingoCellClickability() {
     const cells = document.querySelectorAll('.bingo-cell');
-    // const currentPlayerUid = gameState.playerList[gameState.currentTurn]; // 턴 개념 제거로 삭제
-    // const isMyTurn = currentPlayerUid === gameState.playerUID; // 턴 개념 제거로 삭제
     
     const gameEnded = gameState.gameStarted && (gameState.roomRef && gameState.roomRef.gameEnded || gameState.roomRef && gameState.roomRef.winner);
 
     cells.forEach((cellElement, index) => {
-        // const cellNumber = gameState.bingoBoard[index].number; // 턴 개념 제거로 불필요해짐 (아래 로직에서 직접 참조하지 않음)
-        // const isFlippedCommon = gameState.flippedNumbers.includes(cellNumber); // 턴 개념 제거로 불필요해짐 (아래 로직에서 직접 참조하지 않음)
-
         if (gameEnded) {
             cellElement.style.pointerEvents = 'none';
             cellElement.style.opacity = '0.7';
@@ -641,7 +624,6 @@ function updateBingoCellClickability() {
             cellElement.style.pointerEvents = 'none';
             cellElement.style.opacity = '0.5';
         }
-        // 기존 턴 관련 로직 (isMyTurn, hasMadeMoveInTurn)을 모두 제거합니다.
     });
 }
 
@@ -652,14 +634,10 @@ function checkBingoPossibility() {
     const requiredLines = gameState.winCondition;
     let completedLines = 0;
     const bingoButton = document.getElementById('bingo-button');
-    // const turnEndButton = document.getElementById('turn-end-button'); // 턴 개념 제거로 삭제됨
-    // const currentPlayerUid = gameState.playerList[gameState.currentTurn]; // 턴 개념 제거로 삭제
-    // const isMyTurn = currentPlayerUid === gameState.playerUID; // 턴 개념 제거로 삭제
 
     if (!gameState.gameStarted || !gameState.roomRef) {
         gameState.canClaimBingo = false;
         bingoButton.disabled = true;
-        // turnEndButton.disabled = true; // 턴 개념 제거로 삭제됨
         return;
     }
 
@@ -669,13 +647,10 @@ function checkBingoPossibility() {
 
         if (roomData.gameEnded || roomData.winner) {
             bingoButton.disabled = true;
-            // turnEndButton.disabled = true; // 턴 개념 제거로 삭제됨
             bingoButton.style.display = 'none';
-            // turnEndButton.style.display = 'none'; // 턴 개념 제거로 삭제됨
             return;
         } else {
             bingoButton.style.display = 'block';
-            // turnEndButton.style.display = 'block'; // 턴 개념 제거로 삭제됨
         }
 
         // 빙고 라인 체크
@@ -733,16 +708,12 @@ function checkBingoPossibility() {
             bingoButton.disabled = true;
         }
 
-        // turnEndButton.disabled = !isMyTurn || roomData.gameEnded || roomData.winner || !gameState.hasMadeMoveInTurn; // 턴 개념 제거로 삭제됨
-
     }).catch(error => {
         console.error("Error checking bingo possibility:", error);
         showMessage("빙고/턴 상태 확인 중 오류 발생!", "error");
         bingoButton.disabled = true;
-        // turnEndButton.disabled = true; // 턴 개념 제거로 삭제됨
     });
 }
-// turnEnd 함수 전체 삭제됨 (턴 개념 제거로 불필요)
 
 // 빙고 승리 주장
 async function claimBingo() {
@@ -790,7 +761,6 @@ async function claimBingo() {
         }
         document.getElementById('bingo-button').disabled = true;
         document.getElementById('bingo-button').style.display = 'none';
-        // document.getElementById('turn-end-button').style.display = 'none'; // 턴 개념 제거로 삭제됨
     } catch (error) {
         showMessage('빙고 주장 중 오류가 발생했습니다: ' + error.message, 'error');
         console.error('Claim Bingo Error:', error);
@@ -868,13 +838,11 @@ function backToSetup() {
         maxPlayers: 2,
         gameStarted: false,
         bingoBoard: [],
-        // currentTurn: 0, // 턴 개념 제거로 삭제
         playerList: [],
         roomRef: null,
         missionMap: {},
         canClaimBingo: false,
-        flippedNumbers: [],
-        // hasMadeMoveInTurn: false // 턴 개념 제거로 삭제
+        flippedNumbers: []
     };
     
     // UI 초기화
@@ -890,13 +858,11 @@ function backToSetup() {
     document.getElementById('main-action-buttons').classList.remove('hidden-by-url-param');
 
     document.getElementById('room-code').readOnly = false;
-    // document.getElementById('first-player-section').classList.add('hidden'); // 이미 이전 단계에서 HTML에서 삭제됨
     document.getElementById('player-name').value = '';
     document.getElementById('room-code').value = '';
     document.getElementById('bingo-button').style.display = 'block';
     document.getElementById('bingo-button').disabled = true;
-    document.getElementById('turn-end-button').style.display = 'none'; // 턴 종료 버튼을 항상 숨김
-    // document.getElementById('turn-end-button').disabled = true; // 턴 개념 제거로 삭제됨
+    // document.getElementById('turn-end-button').style.display = 'none'; // 턴 개념 제거로 HTML에서 삭제됨
     
     const winnerOverlay = document.getElementById('winner-overlay');
     if (winnerOverlay) {
@@ -1021,8 +987,6 @@ async function flipCell(index) {
     
     const selectedNumber = gameState.bingoBoard[index].number;
     const missionToAssign = gameState.bingoBoard[index].mission;
-    // const currentPlayerUidInRoom = gameState.playerList[gameState.currentTurn]; // 턴 개념 제거로 삭제
-    // const isMyTurn = gameState.playerUID === currentPlayerUidInRoom; // 턴 개념 제거로 삭제
 
     try {
         const isFlippedCommon = gameState.flippedNumbers.includes(selectedNumber);
@@ -1117,7 +1081,8 @@ function copyShareLink() {
 }
 
 // URL 파라미터 확인 및 자동 입장
-function checkURLParams() {
+// 이 함수는 async로 선언해야 내부에서 await를 사용할 수 있음
+async function checkURLParams() {
     const urlParams = new URLSearchParams(window.location.search);
     const roomCode = urlParams.get('room');
     
@@ -1125,7 +1090,8 @@ function checkURLParams() {
         const upperRoomCode = roomCode.toUpperCase();
         console.log('🎯 URL에서 방 코드 발견:', upperRoomCode);
         
-        setTimeout(() => performAutoJoin(upperRoomCode), 0);
+        // performAutoJoin 자체가 awaitable 하므로 직접 await
+        await performAutoJoin(upperRoomCode); 
         return true;
     } else {
         console.log('❌ URL에 방 코드 없음');
@@ -1134,7 +1100,8 @@ function checkURLParams() {
 }
 
 // 자동 입장 실행
-function performAutoJoin(roomCode) {
+// 이 함수도 async로 선언해야 내부에서 await를 사용할 수 있음
+async function performAutoJoin(roomCode) {
     console.log('🚀 자동 입장 프로세스 시작:', roomCode);
     
     const joinSection = document.getElementById('join-room-section');
@@ -1145,10 +1112,16 @@ function performAutoJoin(roomCode) {
     const mainActionButtons = document.getElementById('main-action-buttons');
     const gameOptionsSection = document.getElementById('game-options-section');
 
+    // DOM 요소가 로드될 때까지 기다리는 대신, 초기화 시점에 이미 존재한다고 가정
+    // 만약 계속해서 "DOM 요소를 찾을 수 없음" 경고가 뜬다면,
+    // DOMContentLoaded 내에서 이 함수를 호출하거나,
+    // DOM 요소를 직접 찾기 전에 작은 setTimeout을 추가하는 것을 고려할 수 있습니다.
+    // 현재는 auth.onAuthStateChanged -> checkURLParams -> performAutoJoin 순서로 호출되므로
+    // DOMContentLoaded 이후에 호출될 가능성이 높습니다.
     if (!joinSection || !roomCodeInput || !nameInput || !hintElement || !createRoomControls || !mainActionButtons || !gameOptionsSection) {
-        console.error('❌ 필요한 DOM 요소를 찾을 수 없음. 재시도합니다.');
-        setTimeout(() => performAutoJoin(roomCode), 100);
-        return;
+        console.error('❌ 필요한 DOM 요소를 찾을 수 없음. 자동 입장이 불가능할 수 있습니다.');
+        // 에러를 유발할 수 있으므로 재시도 로직 제거. DOMContentLoaded에서 확실히 실행되도록 하는 것이 좋음.
+        return; 
     }
     
     console.log('✅ DOM 요소 모두 준비됨');
@@ -1175,10 +1148,10 @@ function performAutoJoin(roomCode) {
         nameInput.removeEventListener('keypress', currentAutoJoinHandler);
     }
     
-    const newAutoJoinHandler = function(e) {
+    const newAutoJoinHandler = async function(e) { // async 추가
         if (e.key === 'Enter' && e.target.value.trim()) {
             console.log('⚡ Enter 키로 자동 입장 시도');
-            joinRoom(roomCode);
+            await joinRoom(roomCode); // await 추가
             nameInput.removeEventListener('keypress', newAutoJoinHandler);
             nameInput._autoJoinHandler = null;
         }
