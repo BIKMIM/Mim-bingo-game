@@ -19,13 +19,13 @@ let gameState = {
     maxPlayers: 2,
     gameStarted: false,
     bingoBoard: [],
-    // currentTurn: 0, // 턴 개념 제거로 삭제
+    // currentTurn: 0, // 턴 개념 제거로 삭제 (이미 주석 처리되어 있었음)
     playerList: [],
     roomRef: null,
     missionMap: {},
     canClaimBingo: false,
     flippedNumbers: [],
-    // hasMadeMoveInTurn: false, // 턴 개념 제거로 삭제
+    // hasMadeMoveInTurn: false, // 턴 개념 제거로 삭제 (이미 주석 처리되어 있었음)
     isAuthReady: false
 };
 
@@ -352,7 +352,7 @@ function setupRoomListeners() {
                 document.getElementById('game-area').style.display = 'none';
             }
 
-            // updateTurnDisplay(); // 턴 개념 제거로 삭제
+            // updateTurnDisplay(); // 턴 개념 제거로 삭제됨
             if (gameState.players[gameState.playerUID] && gameState.players[gameState.playerUID].boardState) {
                 syncBingoBoard(gameState.players[gameState.playerUID].boardState);
             } else {
